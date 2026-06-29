@@ -211,8 +211,11 @@ public sealed class TodayHabitItem(
 		: Color.FromArgb("#E5E7EB");
 
 	public Color CardBackgroundColor => IsCompleted
-		? Color.FromArgb("#2222C55E")
-		: Colors.Transparent;
+		? (IsDarkTheme ? Color.FromArgb("#1A2B22") : Color.FromArgb("#F0FDF4"))
+		: (IsDarkTheme ? Color.FromArgb("#1E1E1E") : Color.FromArgb("#FFFFFF"));
+
+	private static bool IsDarkTheme =>
+		Application.Current?.RequestedTheme == AppTheme.Dark;
 
 	public Color CompletedTextColor => IsCompleted
 		? Color.FromArgb("#22C55E")

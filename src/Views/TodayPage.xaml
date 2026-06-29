@@ -28,14 +28,38 @@
                         <SwipeView>
                             <SwipeView.RightItems>
                                 <SwipeItems Mode="Reveal">
-                                    <SwipeItem Text="{Binding EditLabel}"
-                                               BackgroundColor="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}"
-                                               Command="{Binding EditCommand}"
-                                               CommandParameter="{Binding .}" />
-                                    <SwipeItem Text="{Binding DeleteLabel}"
-                                               BackgroundColor="{AppThemeBinding Light={StaticResource Error}, Dark={StaticResource ErrorDark}}"
-                                               Command="{Binding DeleteCommand}"
-                                               CommandParameter="{Binding .}" />
+                                    <SwipeItemView>
+                                        <Grid WidthRequest="48"
+                                              BackgroundColor="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}"
+                                              SemanticProperties.Description="{Binding EditLabel}">
+                                            <Label Text="&#xE3C9;"
+                                                   FontFamily="MaterialIcons"
+                                                   FontSize="20"
+                                                   TextColor="{StaticResource OnPrimary}"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center" />
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding EditCommand}"
+                                                                      CommandParameter="{Binding .}" />
+                                            </Grid.GestureRecognizers>
+                                        </Grid>
+                                    </SwipeItemView>
+                                    <SwipeItemView>
+                                        <Grid WidthRequest="48"
+                                              BackgroundColor="{AppThemeBinding Light={StaticResource Error}, Dark={StaticResource ErrorDark}}"
+                                              SemanticProperties.Description="{Binding DeleteLabel}">
+                                            <Label Text="&#xE872;"
+                                                   FontFamily="MaterialIcons"
+                                                   FontSize="20"
+                                                   TextColor="{StaticResource OnPrimary}"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center" />
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding DeleteCommand}"
+                                                                      CommandParameter="{Binding .}" />
+                                            </Grid.GestureRecognizers>
+                                        </Grid>
+                                    </SwipeItemView>
                                 </SwipeItems>
                             </SwipeView.RightItems>
                             <Border Margin="0,0,0,12" Padding="16"
