@@ -2,7 +2,6 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:OneTapHabits.ViewModels"
-             xmlns:behaviors="clr-namespace:OneTapHabits.Behaviors"
              x:Class="OneTapHabits.Views.TodayPage"
              x:DataType="vm:TodayViewModel"
              Title="{Binding Title}">
@@ -26,28 +25,40 @@
             <CollectionView ItemsSource="{Binding Habits}" SelectionMode="None">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="vm:TodayHabitItem">
-                        <Border Margin="0,0,0,12" Padding="16"
-                                Stroke="{Binding CompletedStrokeColor}"
-                                BackgroundColor="{Binding CardBackgroundColor}"
-                                SemanticProperties.Hint="{Binding Source={RelativeSource AncestorType={x:Type vm:TodayViewModel}}, Path=HabitLongPressHint}">
-                            <Border.Behaviors>
-                                <behaviors:LongPressBehavior
-                                    TapCommand="{Binding Source={RelativeSource AncestorType={x:Type vm:TodayViewModel}}, Path=ToggleHabitCommand}"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:TodayViewModel}}, Path=EditHabitCommand}"
-                                    CommandParameter="{Binding .}" />
-                            </Border.Behaviors>
-                            <Grid ColumnDefinitions="4,*" ColumnSpacing="12">
-                                <BoxView Grid.Column="0" Color="{Binding AccentColor}" CornerRadius="2" />
-                                <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                    <Label Text="{Binding Habit.Name}" FontSize="18" FontAttributes="Bold"
-                                           TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
-                                    <Label Text="{Binding StreakLabel}" FontSize="14"
-                                           TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
-                                    <Label Text="{Binding CompletedLabel}" FontSize="13"
-                                           TextColor="{Binding CompletedTextColor}" />
-                                </VerticalStackLayout>
-                            </Grid>
-                        </Border>
+                        <SwipeView>
+                            <SwipeView.RightItems>
+                                <SwipeItems Mode="Reveal">
+                                    <SwipeItem Text="{Binding EditLabel}"
+                                               BackgroundColor="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}"
+                                               Command="{Binding EditCommand}"
+                                               CommandParameter="{Binding .}" />
+                                    <SwipeItem Text="{Binding DeleteLabel}"
+                                               BackgroundColor="{AppThemeBinding Light={StaticResource Error}, Dark={StaticResource ErrorDark}}"
+                                               Command="{Binding DeleteCommand}"
+                                               CommandParameter="{Binding .}" />
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+                            <Border Margin="0,0,0,12" Padding="16"
+                                    Stroke="{Binding CompletedStrokeColor}"
+                                    BackgroundColor="{Binding CardBackgroundColor}"
+                                    SemanticProperties.Hint="{Binding SwipeHint}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleCommand}"
+                                                          CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="4,*" ColumnSpacing="12">
+                                    <BoxView Grid.Column="0" Color="{Binding AccentColor}" CornerRadius="2" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                        <Label Text="{Binding Habit.Name}" FontSize="18" FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                                        <Label Text="{Binding StreakLabel}" FontSize="14"
+                                               TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+                                        <Label Text="{Binding CompletedLabel}" FontSize="13"
+                                               TextColor="{Binding CompletedTextColor}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </SwipeView>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

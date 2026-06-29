@@ -79,10 +79,8 @@
 		<AndroidResource Include="Platforms\Android\Resources\values\strings.xml" />
 		<AndroidResource Include="Platforms\Android\Resources\layout\widget_habits.xml" />
 		<AndroidResource Include="Platforms\Android\Resources\layout\widget_initial.xml" />
-		<AndroidResource Include="Platforms\Android\Resources\drawable\widget_color_bar.xml" />
 		<AndroidResource Include="Platforms\Android\Resources\xml\habits_widget_info.xml" />
 		<AndroidResource Include="Platforms\Android\Resources\drawable\widget_background.xml" />
-		<AndroidResource Include="Platforms\Android\Resources\drawable\widget_cell_background.xml" />
 		<AndroidResource Include="Platforms\Android\Resources\xml\file_paths.xml" />
 	</ItemGroup>
 

@@ -42,6 +42,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IWeeklyProgressService, WeeklyProgressService>();
 		builder.Services.AddSingleton<ILocalizationService, LocalizationService>();
 		builder.Services.AddSingleton<IThemeService, ThemeService>();
+		builder.Services.AddSingleton<IWidgetAppearanceService, WidgetAppearanceService>();
 		builder.Services.AddSingleton<UpdateService>();
 		builder.Services.AddSingleton<UpdateCoordinator>();
 

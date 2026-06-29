@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OneTapHabits.Models;
@@ -45,7 +46,6 @@ public partial class TodayViewModel : ObservableObject
 	public string Title => _localization.Get("TodayTitle");
 	public string AddHabitLabel => _localization.Get("AddHabit");
 	public string SettingsLabel => _localization.Get("Settings");
-	public string HabitLongPressHint => _localization.Get("HabitLongPressHint");
 
 	[RelayCommand]
 	public async Task LoadAsync()
@@ -65,6 +65,10 @@ public partial class TodayViewModel : ObservableObject
 			var completionMap = await _logService.GetCompletionMapForDateAsync(today);
 			var historyStart = today.AddDays(-StreakLookbackDays);
 			var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, today);
+
+			var editLabel = _localization.Get("EditHabit");
+			var deleteLabel = _localization.Get("DeleteHabit");
+			var swipeHint = _localization.Get("HabitSwipeHint");
 
 			Habits.Clear();
 			foreach (var habit in habits)
@@ -90,7 +94,17 @@ public partial class TodayViewModel : ObservableObject
 					secondaryLabel = isCompleted ? _localization.Get("Completed") : _localization.Get("TapToComplete");
 				}
 
-				Habits.Add(new TodayHabitItem(habit, isCompleted, primaryLabel, secondaryLabel));
+				Habits.Add(new TodayHabitItem(
+					habit,
+					isCompleted,
+					primaryLabel,
+					secondaryLabel,
+					ToggleHabitCommand,
+					EditHabitCommand,
+					DeleteHabitCommand,
+					editLabel,
+					deleteLabel,
+					swipeHint));
 			}
 
 			await _widgetRefresh.RefreshAsync();
@@ -117,6 +131,40 @@ public partial class TodayViewModel : ObservableObject
 	}
 
 	[RelayCommand]
+	private async Task DeleteHabitAsync(TodayHabitItem item)
+	{
+		var page = Shell.Current?.CurrentPage;
+		if (page is null)
+		{
+			return;
+		}
+
+		var confirmed = await page.DisplayAlert(
+			_localization.Get("DeleteHabitTitle"),
+			string.Format(_localization.Get("DeleteHabitMessage"), item.Habit.Name),
+			_localization.Get("DeleteHabit"),
+			_localization.Get("Cancel"));
+
+		if (!confirmed)
+		{
+			return;
+		}
+
+		try
+		{
+			await _habitService.DeleteHabitAsync(item.Habit.Id);
+			await LoadAsync();
+		}
+		catch (Exception ex)
+		{
+			await page.DisplayAlert(
+				_localization.Get("AppTitle"),
+				UserFriendlyErrorMapper.FromException(ex, _localization),
+				"OK");
+		}
+	}
+
+	[RelayCommand]
 	private async Task AddHabitAsync()
 	{
 		await Shell.Current.GoToAsync("habitForm");
@@ -129,12 +177,28 @@ public partial class TodayViewModel : ObservableObject
 	}
 }
 
-public sealed class TodayHabitItem(Habit habit, bool isCompleted, string streakLabel, string completedLabel)
+public sealed class TodayHabitItem(
+	Habit habit,
+	bool isCompleted,
+	string streakLabel,
+	string completedLabel,
+	ICommand toggleCommand,
+	ICommand editCommand,
+	ICommand deleteCommand,
+	string editLabel,
+	string deleteLabel,
+	string swipeHint)
 {
 	public Habit Habit { get; } = habit;
 	public bool IsCompleted { get; } = isCompleted;
 	public string StreakLabel { get; } = streakLabel;
 	public string CompletedLabel { get; } = completedLabel;
+	public ICommand ToggleCommand { get; } = toggleCommand;
+	public ICommand EditCommand { get; } = editCommand;
+	public ICommand DeleteCommand { get; } = deleteCommand;
+	public string EditLabel { get; } = editLabel;
+	public string DeleteLabel { get; } = deleteLabel;
+	public string SwipeHint { get; } = swipeHint;
 	public Color AccentColor => Color.FromArgb(Habit.ColorHex);
 
 	public Color CompletedStrokeColor => IsCompleted

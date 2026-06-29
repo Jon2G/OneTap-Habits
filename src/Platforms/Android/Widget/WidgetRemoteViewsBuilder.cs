@@ -27,12 +27,6 @@ public static class WidgetRemoteViewsBuilder
 		Resource.Id.cell3_name, Resource.Id.cell4_name, Resource.Id.cell5_name
 	];
 
-	private static readonly int[] ColorBarIds =
-	[
-		Resource.Id.cell0_color, Resource.Id.cell1_color, Resource.Id.cell2_color,
-		Resource.Id.cell3_color, Resource.Id.cell4_color, Resource.Id.cell5_color
-	];
-
 	public static RemoteViews Build(Context context, WidgetSnapshot snapshot)
 	{
 		var views = new RemoteViews(context.PackageName!, Resource.Layout.widget_habits);
@@ -82,7 +76,11 @@ public static class WidgetRemoteViewsBuilder
 				views.SetInt(NameIds[i], "setMaxLines", 1);
 			}
 
-			views.SetInt(ColorBarIds[i], "setBackgroundColor", ParseColor(habit.ColorHex));
+			var tintPercent = Preferences.Default.Get(
+				WidgetAppearanceHelper.TintPreferenceKey,
+				WidgetAppearanceHelper.DefaultTintPercent);
+			var cellBgHex = WidgetAppearanceHelper.BlendCellBackground(habit.ColorHex, tintPercent);
+			views.SetInt(CellIds[i], "setBackgroundColor", ParseColor(cellBgHex));
 			views.SetOnClickPendingIntent(CellIds[i], CreateCompleteIntent(context, habit.Id, i));
 		}
 
@@ -181,7 +179,7 @@ public static class WidgetRemoteViewsBuilder
 		}
 		catch
 		{
-			return global::Android.Graphics.Color.ParseColor("#4CAF50").ToArgb();
+			return global::Android.Graphics.Color.ParseColor(WidgetAppearanceHelper.BaseCellColorHex).ToArgb();
 		}
 	}
 }

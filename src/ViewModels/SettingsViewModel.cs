@@ -14,6 +14,7 @@ public partial class SettingsViewModel : ObservableObject
 	private readonly ILocalizationService _localization;
 	private readonly IWidgetRefreshService _widgetRefresh;
 	private readonly IThemeService _themeService;
+	private readonly IWidgetAppearanceService _widgetAppearance;
 	private readonly UpdateCoordinator _updateCoordinator;
 
 	[ObservableProperty]
@@ -30,12 +31,14 @@ public partial class SettingsViewModel : ObservableObject
 		ILocalizationService localization,
 		IWidgetRefreshService widgetRefresh,
 		IThemeService themeService,
+		IWidgetAppearanceService widgetAppearance,
 		UpdateCoordinator updateCoordinator)
 	{
 		_authService = authService;
 		_localization = localization;
 		_widgetRefresh = widgetRefresh;
 		_themeService = themeService;
+		_widgetAppearance = widgetAppearance;
 		_updateCoordinator = updateCoordinator;
 	}
 
@@ -61,6 +64,12 @@ public partial class SettingsViewModel : ObservableObject
 	public string LicenseLabel => _localization.Get("MitLicense");
 	public string CheckForUpdatesLabel => _localization.Get("CheckForUpdates");
 	public bool IsCheckForUpdatesSupported => DeviceInfo.Platform == DevicePlatform.Android;
+	public string WidgetSectionTitle => _localization.Get("WidgetSection");
+	public string WidgetTintLabel => _localization.Get("WidgetTintLabel");
+	public string WidgetTintSubtleLabel => _widgetAppearance.GetLabel(WidgetTintStrength.Subtle);
+	public string WidgetTintMediumLabel => _widgetAppearance.GetLabel(WidgetTintStrength.Medium);
+	public string WidgetTintStrongLabel => _widgetAppearance.GetLabel(WidgetTintStrength.Strong);
+	public bool IsWidgetSettingsSupported => DeviceInfo.Platform == DevicePlatform.Android;
 
 	public bool IsGuest => _authService.IsGuest;
 	public bool IsSignedIn => _authService.IsSignedIn;
@@ -74,6 +83,9 @@ public partial class SettingsViewModel : ObservableObject
 	public bool IsThemeSystemSelected => _themeService.CurrentPreference == ThemePreference.System;
 	public bool IsThemeLightSelected => _themeService.CurrentPreference == ThemePreference.Light;
 	public bool IsThemeDarkSelected => _themeService.CurrentPreference == ThemePreference.Dark;
+	public bool IsWidgetTintSubtleSelected => _widgetAppearance.CurrentTint == WidgetTintStrength.Subtle;
+	public bool IsWidgetTintMediumSelected => _widgetAppearance.CurrentTint == WidgetTintStrength.Medium;
+	public bool IsWidgetTintStrongSelected => _widgetAppearance.CurrentTint == WidgetTintStrength.Strong;
 
 	partial void OnIsGoogleSignInBusyChanged(bool value)
 	{
@@ -108,6 +120,15 @@ public partial class SettingsViewModel : ObservableObject
 
 	[RelayCommand]
 	private void SetThemeDark() => ApplyTheme(ThemePreference.Dark);
+
+	[RelayCommand]
+	private async Task SetWidgetTintSubtleAsync() => await ApplyWidgetTintAsync(WidgetTintStrength.Subtle);
+
+	[RelayCommand]
+	private async Task SetWidgetTintMediumAsync() => await ApplyWidgetTintAsync(WidgetTintStrength.Medium);
+
+	[RelayCommand]
+	private async Task SetWidgetTintStrongAsync() => await ApplyWidgetTintAsync(WidgetTintStrength.Strong);
 
 	[RelayCommand]
 	private async Task GoogleSignInAsync()
@@ -185,6 +206,16 @@ public partial class SettingsViewModel : ObservableObject
 		NotifyChoicePropertiesChanged();
 	}
 
+	private async Task ApplyWidgetTintAsync(WidgetTintStrength tint)
+	{
+		_widgetAppearance.SetTint(tint);
+		OnPropertyChanged(nameof(WidgetTintSubtleLabel));
+		OnPropertyChanged(nameof(WidgetTintMediumLabel));
+		OnPropertyChanged(nameof(WidgetTintStrongLabel));
+		NotifyChoicePropertiesChanged();
+		await _widgetRefresh.RefreshAsync();
+	}
+
 	private void NotifyChoicePropertiesChanged()
 	{
 		OnPropertyChanged(nameof(IsEnglishSelected));
@@ -192,6 +223,9 @@ public partial class SettingsViewModel : ObservableObject
 		OnPropertyChanged(nameof(IsThemeSystemSelected));
 		OnPropertyChanged(nameof(IsThemeLightSelected));
 		OnPropertyChanged(nameof(IsThemeDarkSelected));
+		OnPropertyChanged(nameof(IsWidgetTintSubtleSelected));
+		OnPropertyChanged(nameof(IsWidgetTintMediumSelected));
+		OnPropertyChanged(nameof(IsWidgetTintStrongSelected));
 	}
 
 	private void NotifyAccountPropertiesChanged()
@@ -222,5 +256,10 @@ public partial class SettingsViewModel : ObservableObject
 		OnPropertyChanged(nameof(ViewSourceLabel));
 		OnPropertyChanged(nameof(LicenseLabel));
 		OnPropertyChanged(nameof(CheckForUpdatesLabel));
+		OnPropertyChanged(nameof(WidgetSectionTitle));
+		OnPropertyChanged(nameof(WidgetTintLabel));
+		OnPropertyChanged(nameof(WidgetTintSubtleLabel));
+		OnPropertyChanged(nameof(WidgetTintMediumLabel));
+		OnPropertyChanged(nameof(WidgetTintStrongLabel));
 	}
 }

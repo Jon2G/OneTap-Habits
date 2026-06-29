@@ -79,6 +79,15 @@ public sealed class HabitService : IHabitService
 		await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitDto.FromModel(habit));
 	}
 
+	public async Task DeleteHabitAsync(string habitId)
+	{
+		var habit = await GetHabitAsync(habitId)
+			?? throw new InvalidOperationException($"Habit not found: {habitId}");
+
+		habit.IsActive = false;
+		await SaveHabitAsync(habit);
+	}
+
 	public async Task<IReadOnlyList<Habit>> GetTodayHabitsAsync(DateOnly today)
 	{
 		var habits = await GetActiveHabitsAsync();

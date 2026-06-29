@@ -67,8 +67,20 @@
   <data name="EditHabit" xml:space="preserve">
     <value>Editar hábito</value>
   </data>
-  <data name="HabitLongPressHint" xml:space="preserve">
-    <value>Toca para completar, mantén pulsado para editar</value>
+  <data name="HabitSwipeHint" xml:space="preserve">
+    <value>Toca para completar, desliza a la izquierda para editar o eliminar</value>
+  </data>
+  <data name="DeleteHabit" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="DeleteHabitTitle" xml:space="preserve">
+    <value>¿Eliminar hábito?</value>
+  </data>
+  <data name="DeleteHabitMessage" xml:space="preserve">
+    <value>¿Eliminar "{0}"? Puedes volver a agregarlo después.</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
   </data>
   <data name="SampleHabitGym" xml:space="preserve">
     <value>Ir al gimnasio</value>
@@ -280,5 +292,20 @@
   </data>
   <data name="UpdateUpToDate" xml:space="preserve">
     <value>Tienes la última versión.</value>
+  </data>
+  <data name="WidgetSection" xml:space="preserve">
+    <value>Widget</value>
+  </data>
+  <data name="WidgetTintLabel" xml:space="preserve">
+    <value>Tinte del color del hábito</value>
+  </data>
+  <data name="WidgetTintSubtle" xml:space="preserve">
+    <value>Suave</value>
+  </data>
+  <data name="WidgetTintMedium" xml:space="preserve">
+    <value>Medio</value>
+  </data>
+  <data name="WidgetTintStrong" xml:space="preserve">
+    <value>Intenso</value>
   </data>
 </root>
