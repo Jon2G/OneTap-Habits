@@ -23,7 +23,7 @@ public partial class TodayViewModel : ObservableObject
 	public ObservableCollection<TodayHabitItem> Habits { get; } = [];
 
 	[ObservableProperty]
-	private bool isBusy;
+	private bool isRefreshing;
 
 	public TodayViewModel(
 		IHabitService habitService,
@@ -50,69 +50,74 @@ public partial class TodayViewModel : ObservableObject
 	[RelayCommand]
 	public async Task LoadAsync()
 	{
-		if (IsBusy)
-		{
-			return;
-		}
+		await LoadHabitsAsync();
+	}
 
-		IsBusy = true;
+	[RelayCommand]
+	private async Task RefreshAsync()
+	{
 		try
 		{
-			await _firstLaunchSeed.SeedIfNeededAsync();
-
-			var today = DateOnly.FromDateTime(DateTime.Today);
-			var habits = await _habitService.GetTodayHabitsAsync(today);
-			var completionMap = await _logService.GetCompletionMapForDateAsync(today);
-			var historyStart = today.AddDays(-StreakLookbackDays);
-			var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, today);
-
-			var editLabel = _localization.Get("EditHabit");
-			var deleteLabel = _localization.Get("DeleteHabit");
-			var swipeHint = _localization.Get("HabitSwipeHint");
-
-			Habits.Clear();
-			foreach (var habit in habits)
-			{
-				var isCompleted = completionMap.TryGetValue(habit.Id, out var completed) && completed;
-				var completionByDate = CompletionMapBuilder.BuildForHabit(habit.Id, historyLogs);
-
-				string primaryLabel;
-				string secondaryLabel;
-
-				if (habit.ScheduleMode == HabitScheduleMode.TimesPerWeek)
-				{
-					var weekStart = WeekBoundaryHelper.GetWeekStart(today);
-					var weekCount = _weeklyProgress.CountCompletionsInWeek(habit.Id, weekStart, historyLogs);
-					var weeklyStreak = _weeklyProgress.CalculateWeeklyStreak(habit, historyLogs, today);
-					primaryLabel = string.Format(_localization.Get("WeeklyProgressFormat"), weekCount, habit.TimesPerWeek);
-					secondaryLabel = string.Format(_localization.Get("WeeklyStreakFormat"), weeklyStreak);
-				}
-				else
-				{
-					var streak = _streakService.CalculateCurrentStreak(habit, completionByDate, today);
-					primaryLabel = string.Format(_localization.Get("Streak"), streak);
-					secondaryLabel = isCompleted ? _localization.Get("Completed") : _localization.Get("TapToComplete");
-				}
-
-				Habits.Add(new TodayHabitItem(
-					habit,
-					isCompleted,
-					primaryLabel,
-					secondaryLabel,
-					ToggleHabitCommand,
-					EditHabitCommand,
-					DeleteHabitCommand,
-					editLabel,
-					deleteLabel,
-					swipeHint));
-			}
-
-			await _widgetRefresh.RefreshAsync();
+			await LoadHabitsAsync();
 		}
 		finally
 		{
-			IsBusy = false;
+			IsRefreshing = false;
 		}
+	}
+
+	private async Task LoadHabitsAsync()
+	{
+		await _firstLaunchSeed.SeedIfNeededAsync();
+
+		var today = DateOnly.FromDateTime(DateTime.Today);
+		var habits = await _habitService.GetTodayHabitsAsync(today);
+		var completionMap = await _logService.GetCompletionMapForDateAsync(today);
+		var historyStart = today.AddDays(-StreakLookbackDays);
+		var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, today);
+
+		var editLabel = _localization.Get("EditHabit");
+		var deleteLabel = _localization.Get("DeleteHabit");
+		var swipeHint = _localization.Get("HabitSwipeHint");
+
+		Habits.Clear();
+		foreach (var habit in habits)
+		{
+			var isCompleted = completionMap.TryGetValue(habit.Id, out var completed) && completed;
+			var completionByDate = CompletionMapBuilder.BuildForHabit(habit.Id, historyLogs);
+
+			string primaryLabel;
+			string secondaryLabel;
+
+			if (habit.ScheduleMode == HabitScheduleMode.TimesPerWeek)
+			{
+				var weekStart = WeekBoundaryHelper.GetWeekStart(today);
+				var weekCount = _weeklyProgress.CountCompletionsInWeek(habit.Id, weekStart, historyLogs);
+				var weeklyStreak = _weeklyProgress.CalculateWeeklyStreak(habit, historyLogs, today);
+				primaryLabel = string.Format(_localization.Get("WeeklyProgressFormat"), weekCount, habit.TimesPerWeek);
+				secondaryLabel = string.Format(_localization.Get("WeeklyStreakFormat"), weeklyStreak);
+			}
+			else
+			{
+				var streak = _streakService.CalculateCurrentStreak(habit, completionByDate, today);
+				primaryLabel = string.Format(_localization.Get("Streak"), streak);
+				secondaryLabel = isCompleted ? _localization.Get("Completed") : _localization.Get("TapToComplete");
+			}
+
+			Habits.Add(new TodayHabitItem(
+				habit,
+				isCompleted,
+				primaryLabel,
+				secondaryLabel,
+				ToggleHabitCommand,
+				EditHabitCommand,
+				DeleteHabitCommand,
+				editLabel,
+				deleteLabel,
+				swipeHint));
+		}
+
+		await _widgetRefresh.RefreshAsync();
 	}
 
 	[RelayCommand]

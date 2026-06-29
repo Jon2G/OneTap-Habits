@@ -1,4 +1,8 @@
 ﻿namespace OneTapHabits;
+
+using CommunityToolkit.Mvvm.Messaging;
+using OneTapHabits.Messages;
+
 public partial class App : Application
 {
 	public App()
@@ -9,5 +13,11 @@ public partial class App : Application
 	protected override Window CreateWindow(IActivationState? activationState)
 	{
 		return new Window(new MainShell());
+	}
+
+	protected override void OnResume()
+	{
+		base.OnResume();
+		WeakReferenceMessenger.Default.Send(new AppResumedMessage());
 	}
 }
