@@ -28,7 +28,28 @@ jobs:
         run: |
           $keystoreBytes = [Convert]::FromBase64String("${{ secrets.ANDROID_KEYSTORE_BASE64 }}")
           [IO.File]::WriteAllBytes("src/onetaphabits.keystore", $keystoreBytes)
+          Write-Host "Keystore file created successfully"
         shell: pwsh
+
+      - name: Validate signing configuration
+        run: |
+          if (-not (Test-Path "src/onetaphabits.keystore")) {
+            Write-Error "onetaphabits.keystore was not created. Check ANDROID_KEYSTORE_BASE64 secret."
+            exit 1
+          }
+          $size = (Get-Item "src/onetaphabits.keystore").Length
+          if ($size -lt 100) {
+            Write-Error "onetaphabits.keystore is too small ($size bytes). Secret may be empty or corrupt."
+            exit 1
+          }
+          if ([string]::IsNullOrEmpty("$env:SIGNING_PASSWORD_CHECK")) {
+            Write-Error "ANDROID_SIGNING_PASSWORD is not set. Add it in repo Settings → Secrets and variables → Actions."
+            exit 1
+          }
+          Write-Host "Signing configuration validated: keystore=$size bytes, password=set"
+        shell: pwsh
+        env:
+          SIGNING_PASSWORD_CHECK: ${{ secrets.ANDROID_SIGNING_PASSWORD }}
 
       - name: Prepare google-services.json
         run: |
@@ -58,7 +79,10 @@ jobs:
         run: dotnet workload install maui-android
 
       - name: Restore dependencies
-        run: dotnet restore ${{ env.PROJECT_PATH }}
+        run: |
+          dotnet restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-android
+          dotnet restore src/OneTapHabits.Core/OneTapHabits.Core.csproj
+        shell: pwsh
 
       - name: Get version from tag
         id: get_version
