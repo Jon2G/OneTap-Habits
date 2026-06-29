@@ -14,6 +14,7 @@ public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 	private readonly IHabitService _habitService;
 	private readonly ILocalizationService _localization;
 	private readonly IWidgetRefreshService _widgetRefresh;
+	private readonly IHabitReminderService _reminderService;
 
 	private string? _editingHabitId;
 
@@ -38,11 +39,22 @@ public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 	[ObservableProperty]
 	private int timesPerWeek = 3;
 
+	[ObservableProperty]
+	private int timesPerDay = 1;
+
+	[ObservableProperty]
+	private bool reminderEnabled;
+
+	[ObservableProperty]
+	private TimeSpan reminderTimeSpan = new(9, 0, 0);
+
 	public bool IsEditing => !string.IsNullOrWhiteSpace(_editingHabitId);
 	public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 	public bool ShowSpecificDaySelection => ScheduleMode == HabitScheduleMode.SpecificDays && !IsEveryDay;
 	public bool ShowSpecificDaysSection => ScheduleMode == HabitScheduleMode.SpecificDays;
 	public bool ShowTimesPerWeekSection => ScheduleMode == HabitScheduleMode.TimesPerWeek;
+	public bool ShowTimesPerDaySection => ScheduleMode == HabitScheduleMode.SpecificDays;
+	public bool ShowReminderTime => ReminderEnabled;
 	public bool IsSpecificDaysMode => ScheduleMode == HabitScheduleMode.SpecificDays;
 	public bool IsTimesPerWeekMode => ScheduleMode == HabitScheduleMode.TimesPerWeek;
 
@@ -54,11 +66,13 @@ public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 	public HabitFormViewModel(
 		IHabitService habitService,
 		ILocalizationService localization,
-		IWidgetRefreshService widgetRefresh)
+		IWidgetRefreshService widgetRefresh,
+		IHabitReminderService reminderService)
 	{
 		_habitService = habitService;
 		_localization = localization;
 		_widgetRefresh = widgetRefresh;
+		_reminderService = reminderService;
 
 		foreach (var hex in HabitColorPalette.All)
 		{
@@ -87,11 +101,21 @@ public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 	public string EveryDayLabel => _localization.Get("EveryDay");
 	public string TimesPerWeekHint => _localization.Get("TimesPerWeekHint");
 	public string TimesPerWeekDisplay => string.Format(_localization.Get("TimesPerWeekFormat"), TimesPerWeek);
+	public string TimesPerDayHint => _localization.Get("TimesPerDayHint");
+	public string TimesPerDayDisplay => string.Format(_localization.Get("TimesPerDayFormat"), TimesPerDay);
+	public string ReminderLabel => _localization.Get("ReminderLabel");
+	public string ReminderHint => _localization.Get("ReminderHint");
 
 	public double TimesPerWeekStepper
 	{
 		get => TimesPerWeek;
 		set => TimesPerWeek = (int)Math.Clamp(Math.Round(value), 1, 6);
+	}
+
+	public double TimesPerDayStepper
+	{
+		get => TimesPerDay;
+		set => TimesPerDay = (int)Math.Clamp(Math.Round(value), 1, 10);
 	}
 
 	public string SaveLabel => _localization.Get("Save");
@@ -120,11 +144,20 @@ public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 		OnPropertyChanged(nameof(TimesPerWeekStepper));
 	}
 
+	partial void OnTimesPerDayChanged(int value)
+	{
+		OnPropertyChanged(nameof(TimesPerDayDisplay));
+		OnPropertyChanged(nameof(TimesPerDayStepper));
+	}
+
+	partial void OnReminderEnabledChanged(bool value) => OnPropertyChanged(nameof(ShowReminderTime));
+
 	partial void OnScheduleModeChanged(HabitScheduleMode value)
 	{
 		OnPropertyChanged(nameof(ShowSpecificDaySelection));
 		OnPropertyChanged(nameof(ShowSpecificDaysSection));
 		OnPropertyChanged(nameof(ShowTimesPerWeekSection));
+		OnPropertyChanged(nameof(ShowTimesPerDaySection));
 		OnPropertyChanged(nameof(IsSpecificDaysMode));
 		OnPropertyChanged(nameof(IsTimesPerWeekMode));
 	}
@@ -222,8 +255,17 @@ public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 			habit.TargetDays = targetDays;
 			habit.ScheduleMode = mode;
 			habit.TimesPerWeek = mode == HabitScheduleMode.TimesPerWeek ? weeklyTarget : 1;
+			habit.TimesPerDay = mode == HabitScheduleMode.SpecificDays ? TimesPerDay : 1;
+			habit.ReminderEnabled = ReminderEnabled;
+			habit.ReminderTime = ReminderEnabled ? TimeOnly.FromTimeSpan(ReminderTimeSpan) : null;
 
 			await _habitService.SaveHabitAsync(habit);
+			if (ReminderEnabled)
+			{
+				await _reminderService.RequestPermissionIfNeededAsync();
+			}
+
+			await _reminderService.ScheduleAsync(habit);
 			await _widgetRefresh.RefreshAsync();
 			await Shell.Current.GoToAsync("..");
 		}
@@ -253,6 +295,9 @@ public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 		ShowInWidget = habit.ShowInWidget;
 		ScheduleMode = habit.ScheduleMode;
 		TimesPerWeek = habit.TimesPerWeek;
+		TimesPerDay = habit.TimesPerDay;
+		ReminderEnabled = habit.ReminderEnabled;
+		ReminderTimeSpan = habit.ReminderTime?.ToTimeSpan() ?? new TimeSpan(9, 0, 0);
 
 		if (habit.ScheduleMode == HabitScheduleMode.SpecificDays)
 		{
@@ -276,10 +321,14 @@ public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 		OnPropertyChanged(nameof(ShowSpecificDaySelection));
 		OnPropertyChanged(nameof(ShowSpecificDaysSection));
 		OnPropertyChanged(nameof(ShowTimesPerWeekSection));
+		OnPropertyChanged(nameof(ShowTimesPerDaySection));
+		OnPropertyChanged(nameof(ShowReminderTime));
 		OnPropertyChanged(nameof(IsSpecificDaysMode));
 		OnPropertyChanged(nameof(IsTimesPerWeekMode));
 		OnPropertyChanged(nameof(TimesPerWeekDisplay));
 		OnPropertyChanged(nameof(TimesPerWeekStepper));
+		OnPropertyChanged(nameof(TimesPerDayDisplay));
+		OnPropertyChanged(nameof(TimesPerDayStepper));
 		OnPropertyChanged(nameof(PreviewName));
 		OnPropertyChanged(nameof(PreviewAccentColor));
 	}

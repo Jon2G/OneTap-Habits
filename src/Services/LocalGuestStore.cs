@@ -85,10 +85,32 @@ public sealed class LocalGuestStore : ILocalGuestStore
 			{
 				HabitId = habitId,
 				Date = dateKey,
-				IsCompleted = true
+				IsCompleted = true,
+				Count = 1
 			});
 		}
 
 		SaveToPath(filePath, snapshot);
+	}
+
+	public static int IncrementCount(string appDataDirectory, string habitId, DateOnly date)
+	{
+		var filePath = GetFilePath(appDataDirectory);
+		var snapshot = LoadFromPath(filePath);
+		var dateKey = date.ToString("yyyy-MM-dd");
+		var existing = snapshot.Logs.FirstOrDefault(l => l.HabitId == habitId && l.Date == dateKey);
+		var next = (existing?.Count ?? 0) + 1;
+
+		snapshot.Logs.RemoveAll(l => l.HabitId == habitId && l.Date == dateKey);
+		snapshot.Logs.Add(new GuestLogEntry
+		{
+			HabitId = habitId,
+			Date = dateKey,
+			IsCompleted = true,
+			Count = next
+		});
+
+		SaveToPath(filePath, snapshot);
+		return next;
 	}
 }

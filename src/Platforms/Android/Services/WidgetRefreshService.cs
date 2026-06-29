@@ -1,5 +1,4 @@
 using Android.Appwidget;
-using Android.Content;
 using OneTapHabits.Models;
 using OneTapHabits.Services;
 using OneTapHabits.Services.Widget;
@@ -27,17 +26,22 @@ public sealed class WidgetRefreshService : IWidgetRefreshService
 
 		var today = DateOnly.FromDateTime(DateTime.Today);
 		var habits = await _habitService.GetTodayHabitsAsync(today);
-		var completionMap = await _logService.GetCompletionMapForDateAsync(today);
+		var countMap = await _logService.GetCountMapForDateAsync(today);
 
 		var incomplete = habits
 			.Where(h => h.ShowInWidget)
-			.Where(h => !completionMap.TryGetValue(h.Id, out var done) || !done)
-			.OrderBy(h => h.Name)
+			.Where(h =>
+			{
+				var count = countMap.TryGetValue(h.Id, out var value) ? value : 0;
+				return !HabitDailyTargetHelper.IsDailyTargetMet(h, count);
+			})
 			.Select(h => new WidgetHabitEntry
 			{
 				Id = h.Id,
 				Name = h.Name,
-				ColorHex = h.ColorHex
+				ColorHex = h.ColorHex,
+				Count = countMap.TryGetValue(h.Id, out var count) ? count : 0,
+				TimesPerDay = HabitDailyTargetHelper.GetDailyTarget(h)
 			})
 			.ToList();
 
@@ -58,12 +62,13 @@ public sealed class WidgetRefreshService : IWidgetRefreshService
 	public Task ClearAsync()
 	{
 		var context = global::Android.App.Application.Context;
-		if (context is not null)
+		if (context is null)
 		{
-			WidgetSnapshotStore.Clear(context);
-			AppWidgets.HabitsAppWidgetProvider.UpdateAllWidgets(context);
+			return Task.CompletedTask;
 		}
 
+		WidgetSnapshotStore.Clear(context);
+		AppWidgets.HabitsAppWidgetProvider.UpdateAllWidgets(context);
 		return Task.CompletedTask;
 	}
 }

@@ -14,4 +14,6 @@ public sealed class GuestLogEntry
 	public string Date { get; set; } = string.Empty;
 
 	public bool IsCompleted { get; set; }
+
+	public int Count { get; set; }
 }

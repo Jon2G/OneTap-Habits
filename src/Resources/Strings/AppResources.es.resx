@@ -215,6 +215,27 @@
   <data name="TapToComplete" xml:space="preserve">
     <value>Toca para completar</value>
   </data>
+  <data name="DailyProgressFormat" xml:space="preserve">
+    <value>{0}/{1} hoy</value>
+  </data>
+  <data name="TimesPerDayFormat" xml:space="preserve">
+    <value>{0} veces al día</value>
+  </data>
+  <data name="TimesPerDayHint" xml:space="preserve">
+    <value>Toca para sumar progreso. La racha cuenta desde la primera vez cada día.</value>
+  </data>
+  <data name="DragReorderHint" xml:space="preserve">
+    <value>Arrastra para reordenar hábitos</value>
+  </data>
+  <data name="ReminderLabel" xml:space="preserve">
+    <value>Recordatorio diario</value>
+  </data>
+  <data name="ReminderHint" xml:space="preserve">
+    <value>Notificación en los días programados a la hora que elijas</value>
+  </data>
+  <data name="ReminderBody" xml:space="preserve">
+    <value>Hora de tu hábito</value>
+  </data>
   <data name="ErrorEmailRequired" xml:space="preserve">
     <value>Ingresa tu correo electrónico.</value>
   </data>

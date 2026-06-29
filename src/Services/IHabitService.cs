@@ -9,4 +9,5 @@ public interface IHabitService
 	Task SaveHabitAsync(Habit habit);
 	Task DeleteHabitAsync(string habitId);
 	Task<IReadOnlyList<Habit>> GetTodayHabitsAsync(DateOnly today);
+	Task ReorderHabitsAsync(IReadOnlyList<string> orderedHabitIds);
 }

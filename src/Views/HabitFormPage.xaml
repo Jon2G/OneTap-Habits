@@ -162,11 +162,35 @@
             </CollectionView>
             </VerticalStackLayout>
 
+            <VerticalStackLayout IsVisible="{Binding ShowTimesPerDaySection}" Spacing="8">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="{Binding TimesPerDayDisplay}" VerticalOptions="Center"
+                           TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                    <Stepper Grid.Column="1" Minimum="1" Maximum="10" Value="{Binding TimesPerDayStepper}" />
+                </Grid>
+                <Label Text="{Binding TimesPerDayHint}" FontSize="13"
+                       TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            </VerticalStackLayout>
+
             <Grid ColumnDefinitions="*,Auto">
                 <Label Text="{Binding ShowInWidgetLabel}" VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
                 <Switch Grid.Column="1" IsToggled="{Binding ShowInWidget}" />
             </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="{Binding ReminderLabel}" VerticalOptions="Center"
+                           TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                    <Label Text="{Binding ReminderHint}" FontSize="13"
+                           TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+                </VerticalStackLayout>
+                <Switch Grid.Column="1" IsToggled="{Binding ReminderEnabled}" VerticalOptions="Center" />
+            </Grid>
+
+            <TimePicker IsVisible="{Binding ShowReminderTime}"
+                        Time="{Binding ReminderTimeSpan}"
+                        Format="HH:mm" />
 
             <Label Text="{Binding ErrorMessage}"
                    IsVisible="{Binding HasError}"

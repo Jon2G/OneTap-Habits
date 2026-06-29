@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Maui.LifecycleEvents;
-using Microsoft.Maui.ApplicationModel;
 using OneTapHabits.Services;
 using OneTapHabits.Services.Widget;
 using OneTapHabits.ViewModels;
@@ -8,6 +7,7 @@ using OneTapHabits.Views;
 using Plugin.Firebase.Auth;
 using Plugin.Firebase.Crashlytics;
 using Plugin.Firebase.Firestore;
+using Plugin.LocalNotification;
 
 #if ANDROID
 using Plugin.Firebase.Core.Platforms.Android;
@@ -24,6 +24,7 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+			.UseLocalNotification()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -49,9 +50,11 @@ public static class MauiProgram
 #if ANDROID
 		builder.Services.AddSingleton<IWidgetRefreshService, Platforms.Android.Services.WidgetRefreshService>();
 		builder.Services.AddSingleton<IGoogleSignInService, Platforms.Android.Services.AndroidGoogleSignInService>();
+		builder.Services.AddSingleton<IHabitReminderService, Platforms.Android.Services.AndroidHabitReminderService>();
 #else
 		builder.Services.AddSingleton<IWidgetRefreshService, NoOpWidgetRefreshService>();
 		builder.Services.AddSingleton<IGoogleSignInService, NoOpGoogleSignInService>();
+		builder.Services.AddSingleton<IHabitReminderService, NoOpHabitReminderService>();
 #endif
 
 		builder.Services.AddTransient<TodayViewModel>();
@@ -80,6 +83,8 @@ public static class MauiProgram
 			{
 				CrossFirebase.Initialize(activity, () => Platform.CurrentActivity);
 				CrossFirebaseCrashlytics.Current.SetCrashlyticsCollectionEnabled(true);
+				ScheduleRemindersOnStartup();
+				return;
 			}));
 #elif IOS
 			events.AddiOS(iOS => iOS.WillFinishLaunching((_, _) =>
@@ -93,5 +98,25 @@ public static class MauiProgram
 		builder.Services.AddSingleton(_ => CrossFirebaseAuth.Current);
 		builder.Services.AddSingleton(_ => CrossFirebaseFirestore.Current);
 		return builder;
+	}
+
+	private static void ScheduleRemindersOnStartup()
+	{
+		_ = Task.Run(async () =>
+		{
+			try
+			{
+				await Task.Delay(500);
+				var reminderService = IPlatformApplication.Current?.Services.GetService<IHabitReminderService>();
+				if (reminderService is not null)
+				{
+					await reminderService.RescheduleAllAsync();
+				}
+			}
+			catch
+			{
+				// Non-fatal if reminders fail to schedule at startup.
+			}
+		});
 	}
 }

@@ -15,7 +15,7 @@ public static class GuestLogQuery
 		}
 
 		return guest.Logs
-			.Where(l => l.IsCompleted)
+			.Where(l => l.IsCompleted || l.Count > 0)
 			.Select(ParseEntry)
 			.Where(l => l is not null && l.Date >= startInclusive && l.Date <= endInclusive)
 			.Cast<HabitLog>()
@@ -29,12 +29,14 @@ public static class GuestLogQuery
 			return null;
 		}
 
+		var count = entry.Count > 0 ? entry.Count : entry.IsCompleted ? 1 : 0;
 		return new HabitLog
 		{
 			Id = HabitLog.CreateId(date, entry.HabitId),
 			HabitId = entry.HabitId,
 			Date = date,
-			IsCompleted = entry.IsCompleted
+			IsCompleted = count > 0,
+			Count = count
 		};
 	}
 }

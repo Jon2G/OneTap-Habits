@@ -16,6 +16,7 @@ public partial class TodayPage : ContentPage
 		_viewModel = viewModel;
 		_updateCoordinator = updateCoordinator;
 		BindingContext = viewModel;
+		HabitsCollectionView.ReorderCompleted += OnReorderCompleted;
 	}
 
 	protected override async void OnAppearing()
@@ -37,5 +38,10 @@ public partial class TodayPage : ContentPage
 	private async void OnAppResumed(object recipient, AppResumedMessage message)
 	{
 		await _viewModel.LoadCommand.ExecuteAsync(null);
+	}
+
+	private async void OnReorderCompleted(object? sender, EventArgs e)
+	{
+		await _viewModel.PersistHabitOrderAsync();
 	}
 }

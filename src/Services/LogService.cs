@@ -36,13 +36,7 @@ public sealed class LogService : ILogService
 				return null;
 			}
 
-			return new HabitLog
-			{
-				Id = HabitLog.CreateId(date, habitId),
-				HabitId = habitId,
-				Date = date,
-				IsCompleted = entry.IsCompleted
-			};
+			return ToLog(habitId, date, entry.IsCompleted, entry.Count);
 		}
 
 		var id = HabitLog.CreateId(date, habitId);
@@ -55,55 +49,56 @@ public sealed class LogService : ILogService
 		return snapshot.Data.ToModel(id, habitId, date);
 	}
 
+	public async Task<int> GetCountAsync(string habitId, DateOnly date)
+	{
+		var log = await GetLogAsync(habitId, date);
+		return log?.Count ?? 0;
+	}
+
+	public async Task<int> IncrementCountAsync(string habitId, DateOnly date)
+	{
+		var current = await GetCountAsync(habitId, date);
+		var next = current + 1;
+		await UpsertCountAsync(habitId, date, next);
+		return next;
+	}
+
 	public async Task SetCompletedAsync(string habitId, DateOnly date, bool isCompleted)
 	{
-		if (_auth.IsGuest)
+		if (isCompleted)
 		{
-			var guest = await _guestStore.LoadAsync();
-			var dateKey = date.ToString("yyyy-MM-dd");
-			guest.Logs.RemoveAll(l => l.HabitId == habitId && l.Date == dateKey);
-			if (isCompleted)
-			{
-				guest.Logs.Add(new GuestLogEntry
-				{
-					HabitId = habitId,
-					Date = dateKey,
-					IsCompleted = true
-				});
-			}
-
-			await _guestStore.SaveAsync(guest);
+			await UpsertCountAsync(habitId, date, 1);
 			return;
 		}
 
-		var id = HabitLog.CreateId(date, habitId);
-		var dto = new LogDto
-		{
-			HabitId = habitId,
-			Date = date.ToString("O"),
-			IsCompleted = isCompleted
-		};
-
-		await CloudLogsCollection().GetDocument(id).SetDataAsync(dto);
+		await UpsertCountAsync(habitId, date, 0);
 	}
 
 	public async Task<IReadOnlyDictionary<string, bool>> GetCompletionMapForDateAsync(DateOnly date)
+	{
+		var countMap = await GetCountMapForDateAsync(date);
+		return countMap.ToDictionary(kvp => kvp.Key, kvp => kvp.Value >= 1);
+	}
+
+	public async Task<IReadOnlyDictionary<string, int>> GetCountMapForDateAsync(DateOnly date)
 	{
 		if (_auth.IsGuest)
 		{
 			var guest = await _guestStore.LoadAsync();
 			var dateKey = date.ToString("yyyy-MM-dd");
 			return guest.Logs
-				.Where(l => l.Date == dateKey && l.IsCompleted)
+				.Where(l => l.Date == dateKey && l.Count > 0)
 				.GroupBy(l => l.HabitId)
-				.ToDictionary(g => g.Key, _ => true);
+				.ToDictionary(g => g.Key, g => g.Max(l => l.Count));
 		}
 
 		var prefix = date.ToString("yyyy-MM-dd");
 		var snapshot = await CloudLogsCollection().GetDocumentsAsync<LogDto>();
 		return snapshot.Documents
 			.Where(d => d.Data is not null && d.Reference.Id.StartsWith(prefix, StringComparison.Ordinal))
-			.ToDictionary(d => d.Data!.HabitId, d => d.Data!.IsCompleted);
+			.Select(d => d.Data!)
+			.Where(d => ResolveCount(d) > 0)
+			.ToDictionary(d => d.HabitId, ResolveCount);
 	}
 
 	public async Task<IReadOnlyList<HabitLog>> GetCompletedLogsInRangeAsync(
@@ -123,12 +118,63 @@ public sealed class LogService : ILogService
 
 		var snapshot = await CloudLogsCollection().GetDocumentsAsync<LogDto>();
 		return snapshot.Documents
-			.Where(d => d.Data is not null && d.Data.IsCompleted)
+			.Where(d => d.Data is not null && (d.Data!.IsCompleted || d.Data.Count > 0))
 			.Select(d => ToLogFromSnapshot(d.Reference.Id, d.Data!))
 			.Where(l => l is not null && l.Date >= startInclusive && l.Date <= endInclusive)
 			.Cast<HabitLog>()
 			.ToList();
 	}
+
+	private async Task UpsertCountAsync(string habitId, DateOnly date, int count)
+	{
+		if (_auth.IsGuest)
+		{
+			var guest = await _guestStore.LoadAsync();
+			var dateKey = date.ToString("yyyy-MM-dd");
+			guest.Logs.RemoveAll(l => l.HabitId == habitId && l.Date == dateKey);
+			if (count > 0)
+			{
+				guest.Logs.Add(new GuestLogEntry
+				{
+					HabitId = habitId,
+					Date = dateKey,
+					IsCompleted = true,
+					Count = count
+				});
+			}
+
+			await _guestStore.SaveAsync(guest);
+			return;
+		}
+
+		var id = HabitLog.CreateId(date, habitId);
+		if (count <= 0)
+		{
+			await CloudLogsCollection().GetDocument(id).DeleteDocumentAsync();
+			return;
+		}
+
+		var dto = new LogDto
+		{
+			HabitId = habitId,
+			Date = date.ToString("O"),
+			IsCompleted = true,
+			Count = count
+		};
+
+		await CloudLogsCollection().GetDocument(id).SetDataAsync(dto);
+	}
+
+	private static HabitLog ToLog(string habitId, DateOnly date, bool isCompleted, int count) => new()
+	{
+		Id = HabitLog.CreateId(date, habitId),
+		HabitId = habitId,
+		Date = date,
+		IsCompleted = isCompleted || count > 0,
+		Count = count
+	};
+
+	private static int ResolveCount(LogDto dto) => dto.Count > 0 ? dto.Count : dto.IsCompleted ? 1 : 0;
 
 	private static HabitLog? ToLogFromSnapshot(string id, LogDto dto)
 	{
@@ -165,18 +211,24 @@ public sealed class LogService : ILogService
 		return _firestore.GetCollection($"users/{userId}/logs");
 	}
 
-	private sealed class LogDto
+	internal sealed class LogDto
 	{
 		public string HabitId { get; set; } = string.Empty;
 		public string Date { get; set; } = string.Empty;
 		public bool IsCompleted { get; set; }
+		public int Count { get; set; } = 1;
 
-		public HabitLog ToModel(string id, string habitId, DateOnly date) => new()
+		public HabitLog ToModel(string id, string habitId, DateOnly date)
 		{
-			Id = id,
-			HabitId = habitId,
-			Date = date,
-			IsCompleted = IsCompleted
-		};
+			var count = Count > 0 ? Count : IsCompleted ? 1 : 0;
+			return new HabitLog
+			{
+				Id = id,
+				HabitId = habitId,
+				Date = date,
+				IsCompleted = count > 0,
+				Count = count
+			};
+		}
 	}
 }

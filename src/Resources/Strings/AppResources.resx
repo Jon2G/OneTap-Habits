@@ -215,6 +215,27 @@
   <data name="TapToComplete" xml:space="preserve">
     <value>Tap to complete</value>
   </data>
+  <data name="DailyProgressFormat" xml:space="preserve">
+    <value>{0}/{1} today</value>
+  </data>
+  <data name="TimesPerDayFormat" xml:space="preserve">
+    <value>{0} times per day</value>
+  </data>
+  <data name="TimesPerDayHint" xml:space="preserve">
+    <value>Tap to add progress. Streak counts after the first completion each day.</value>
+  </data>
+  <data name="DragReorderHint" xml:space="preserve">
+    <value>Drag to reorder habits</value>
+  </data>
+  <data name="ReminderLabel" xml:space="preserve">
+    <value>Daily reminder</value>
+  </data>
+  <data name="ReminderHint" xml:space="preserve">
+    <value>Notification on scheduled days at the time you choose</value>
+  </data>
+  <data name="ReminderBody" xml:space="preserve">
+    <value>Time for your habit</value>
+  </data>
   <data name="ErrorEmailRequired" xml:space="preserve">
     <value>Enter your email address.</value>
   </data>

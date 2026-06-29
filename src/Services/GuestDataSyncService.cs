@@ -37,7 +37,7 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 			await HabitsCollection(userId).GetDocument(habit.Id).SetDataAsync(HabitDto.FromModel(habit));
 		}
 
-		foreach (var log in guest.Logs.Where(l => l.IsCompleted))
+		foreach (var log in guest.Logs.Where(l => l.IsCompleted || l.Count > 0))
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			if (!DateOnly.TryParse(log.Date, out var date))
@@ -46,11 +46,13 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 			}
 
 			var logId = HabitLog.CreateId(date, log.HabitId);
+			var count = log.Count > 0 ? log.Count : 1;
 			await LogsCollection(userId).GetDocument(logId).SetDataAsync(new LogDto
 			{
 				HabitId = log.HabitId,
 				Date = date.ToString("O"),
-				IsCompleted = true
+				IsCompleted = true,
+				Count = count
 			});
 		}
 
@@ -72,18 +74,20 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 				.Select(d => d.Data!.ToModel(d.Reference.Id))
 				.ToList(),
 			Logs = logsSnapshot.Documents
-				.Where(d => d.Data is not null && d.Data.IsCompleted)
+				.Where(d => d.Data is not null && (d.Data!.IsCompleted || d.Data.Count > 0))
 				.Select(d =>
 				{
 					var habitId = d.Data!.HabitId;
 					var date = DateOnly.TryParse(d.Data.Date, out var parsed)
 						? parsed
 						: ParseLogDateFromId(d.Reference.Id, habitId);
+					var count = d.Data.Count > 0 ? d.Data.Count : 1;
 					return new GuestLogEntry
 					{
 						HabitId = habitId,
 						Date = date.ToString("yyyy-MM-dd"),
-						IsCompleted = true
+						IsCompleted = true,
+						Count = count
 					};
 				})
 				.ToList()
@@ -118,6 +122,10 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		public List<int> TargetDays { get; set; } = [];
 		public int ScheduleMode { get; set; }
 		public int TimesPerWeek { get; set; } = 1;
+		public int TimesPerDay { get; set; } = 1;
+		public int SortOrder { get; set; }
+		public bool ReminderEnabled { get; set; }
+		public string? ReminderTime { get; set; }
 		public DateTimeOffset CreatedAt { get; set; }
 		public bool IsActive { get; set; } = true;
 
@@ -129,6 +137,10 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 			TargetDays = habit.TargetDays.ToList(),
 			ScheduleMode = (int)habit.ScheduleMode,
 			TimesPerWeek = habit.TimesPerWeek,
+			TimesPerDay = habit.TimesPerDay,
+			SortOrder = habit.SortOrder,
+			ReminderEnabled = habit.ReminderEnabled,
+			ReminderTime = habit.ReminderTime?.ToString("HH:mm"),
 			CreatedAt = habit.CreatedAt,
 			IsActive = habit.IsActive
 		};
@@ -144,6 +156,10 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 				? (HabitScheduleMode)ScheduleMode
 				: HabitScheduleMode.SpecificDays,
 			TimesPerWeek = TimesPerWeek < 1 ? 1 : TimesPerWeek,
+			TimesPerDay = TimesPerDay < 1 ? 1 : TimesPerDay,
+			SortOrder = SortOrder,
+			ReminderEnabled = ReminderEnabled,
+			ReminderTime = TimeOnly.TryParse(ReminderTime, out var time) ? time : null,
 			CreatedAt = CreatedAt,
 			IsActive = IsActive
 		};
@@ -154,5 +170,6 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		public string HabitId { get; set; } = string.Empty;
 		public string Date { get; set; } = string.Empty;
 		public bool IsCompleted { get; set; }
+		public int Count { get; set; } = 1;
 	}
 }

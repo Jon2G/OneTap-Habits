@@ -6,6 +6,7 @@ public sealed class HabitLog
 	public string HabitId { get; set; } = string.Empty;
 	public DateOnly Date { get; set; }
 	public bool IsCompleted { get; set; }
+	public int Count { get; set; } = 1;
 
 	public static string CreateId(DateOnly date, string habitId) => $"{date:yyyy-MM-dd}_{habitId}";
 }

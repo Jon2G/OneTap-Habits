@@ -22,7 +22,10 @@
 
     <Grid RowDefinitions="*,Auto" Padding="16">
         <RefreshView Grid.Row="0" Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
-            <CollectionView ItemsSource="{Binding Habits}" SelectionMode="None">
+            <CollectionView x:Name="HabitsCollectionView"
+                            ItemsSource="{Binding Habits}"
+                            SelectionMode="None"
+                            CanReorderItems="True">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="vm:TodayHabitItem">
                         <SwipeView>
@@ -67,7 +70,7 @@
                                     BackgroundColor="{Binding CardBackgroundColor}"
                                     SemanticProperties.Hint="{Binding SwipeHint}">
                                 <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding ToggleCommand}"
+                                    <TapGestureRecognizer Command="{Binding IncrementCommand}"
                                                           CommandParameter="{Binding .}" />
                                 </Border.GestureRecognizers>
                                 <Grid ColumnDefinitions="4,*" ColumnSpacing="12">

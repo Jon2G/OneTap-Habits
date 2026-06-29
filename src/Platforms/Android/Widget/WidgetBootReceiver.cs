@@ -1,5 +1,6 @@
 using Android.App;
 using Android.Content;
+using OneTapHabits.Services;
 
 namespace OneTapHabits.Platforms.Android.AppWidgets;
 
@@ -19,5 +20,21 @@ public class WidgetBootReceiver : BroadcastReceiver
 		}
 
 		HabitsAppWidgetProvider.UpdateAllWidgets(context);
+
+		Task.Run(async () =>
+		{
+			try
+			{
+				var reminderService = IPlatformApplication.Current?.Services.GetService<IHabitReminderService>();
+				if (reminderService is not null)
+				{
+					await reminderService.RescheduleAllAsync();
+				}
+			}
+			catch
+			{
+				// Boot-time reminder scheduling is best-effort.
+			}
+		});
 	}
 }

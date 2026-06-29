@@ -23,18 +23,21 @@ public class WidgetTapReceiver : BroadcastReceiver
 			return;
 		}
 
-		Services.WidgetSnapshotStore.RemoveHabit(context, habitId);
-		HabitsAppWidgetProvider.UpdateAllWidgets(context);
-
 		Task.Run(async () =>
 		{
 			try
 			{
-				await Services.WidgetCompletionService.WriteCompletionAsync(context, habitId);
+				var result = await Services.WidgetCompletionService.IncrementHabitAsync(context, habitId);
+				if (result.ShouldRemoveFromWidget)
+				{
+					Services.WidgetSnapshotStore.RemoveHabit(context, habitId);
+				}
+
+				HabitsAppWidgetProvider.UpdateAllWidgets(context);
 			}
 			catch
 			{
-				// Snapshot already updated; app refresh will reconcile on next open.
+				HabitsAppWidgetProvider.UpdateAllWidgets(context);
 			}
 		});
 	}

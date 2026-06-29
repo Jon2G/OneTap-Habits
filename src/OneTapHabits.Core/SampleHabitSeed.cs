@@ -17,6 +17,7 @@ public static class SampleHabitSeed
 				ColorHex = "#F97316",
 				ShowInWidget = true,
 				TargetDays = [1, 2, 3, 4, 5, 6, 7],
+				SortOrder = 0,
 				CreatedAt = createdAt,
 				IsActive = true
 			},
@@ -27,6 +28,7 @@ public static class SampleHabitSeed
 				ColorHex = "#3B82F6",
 				ShowInWidget = true,
 				TargetDays = [1, 2, 3, 4, 5, 6, 7],
+				SortOrder = 1,
 				CreatedAt = createdAt,
 				IsActive = true
 			}
