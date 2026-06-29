@@ -1,0 +1,88 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net9.0-android;net9.0-ios</TargetFrameworks>
+
+		<OutputType>Exe</OutputType>
+		<RootNamespace>OneTapHabits</RootNamespace>
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<ApplicationTitle>OneTap Habits</ApplicationTitle>
+		<ApplicationId>com.jon2g.onetaphabits</ApplicationId>
+
+		<ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+		<ApplicationVersion>10000</ApplicationVersion>
+
+		<WindowsPackageType>None</WindowsPackageType>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$(TargetFramework.Contains('-ios'))">
+		<SupportedOSPlatformVersion>17.0</SupportedOSPlatformVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$(TargetFramework.Contains('-android'))">
+		<SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$(TargetFramework.Contains('-android')) and '$(Configuration)' == 'Release'">
+		<AndroidKeyStore>true</AndroidKeyStore>
+		<AndroidSigningKeyStore>onetaphabits.keystore</AndroidSigningKeyStore>
+		<AndroidSigningKeyAlias>onetaphabits</AndroidSigningKeyAlias>
+		<AndroidSigningKeyPass>$(ANDROID_SIGNING_PASSWORD)</AndroidSigningKeyPass>
+		<AndroidSigningStorePass>$(ANDROID_SIGNING_PASSWORD)</AndroidSigningStorePass>
+		<AndroidPackageFormat>apk</AndroidPackageFormat>
+		<AndroidLinkTool>r8</AndroidLinkTool>
+	</PropertyGroup>
+
+	<ItemGroup Condition="$(TargetFramework.Contains('-android')) and '$(Configuration)' == 'Release'">
+		<ProguardConfiguration Include="Platforms\Android\proguard-rules.pro" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#FFFFFF" ForegroundScale="0.72" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#000000" BaseSize="256,256" />
+		<MauiImage Include="Resources\Images\*" />
+		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
+		<MauiFont Include="Resources\Fonts\*" />
+		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Remove="OneTapHabits.Core/**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="OneTapHabits.Core\OneTapHabits.Core.csproj" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.9" />
+		<PackageReference Include="Plugin.Firebase.Auth" Version="4.0.0" />
+		<PackageReference Include="Plugin.Firebase.Core" Version="4.0.0" />
+		<PackageReference Include="Plugin.Firebase.Crashlytics" Version="4.0.0" />
+		<PackageReference Include="Plugin.Firebase.Firestore" Version="4.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Resources\Strings\AppResources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>AppResources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Resources\Strings\AppResources.es.resx" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net9.0-android'">
+		<GoogleServicesJson Include="google-services.json" />
+		<MauiAsset Include="google-services.json" LogicalName="google-services.json" />
+		<AndroidResource Include="Platforms\Android\Resources\values\strings.xml" />
+		<AndroidResource Include="Platforms\Android\Resources\layout\widget_habits.xml" />
+		<AndroidResource Include="Platforms\Android\Resources\layout\widget_initial.xml" />
+		<AndroidResource Include="Platforms\Android\Resources\drawable\widget_color_bar.xml" />
+		<AndroidResource Include="Platforms\Android\Resources\xml\habits_widget_info.xml" />
+		<AndroidResource Include="Platforms\Android\Resources\drawable\widget_background.xml" />
+		<AndroidResource Include="Platforms\Android\Resources\drawable\widget_cell_background.xml" />
+	</ItemGroup>
+
+</Project>

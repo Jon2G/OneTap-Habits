@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:OneTapHabits.ViewModels"
+             x:Class="OneTapHabits.Views.HabitFormPage"
+             x:DataType="vm:HabitFormViewModel"
+             Title="{Binding Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+            <Label Text="{Binding HabitNameLabel}" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+            <Border Padding="12,4">
+                <Entry Text="{Binding Name}" Placeholder="{Binding HabitNamePlaceholder}" BackgroundColor="Transparent" />
+            </Border>
+
+            <Label Text="{Binding ColorLabel}" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+
+            <Label Text="{Binding ColorPreviewLabel}" FontSize="13"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+
+            <Border Padding="16"
+                    Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}">
+                <Grid ColumnDefinitions="4,*" ColumnSpacing="12">
+                    <BoxView Grid.Column="0"
+                             Color="{Binding PreviewAccentColor}"
+                             CornerRadius="2"
+                             VerticalOptions="Fill"
+                             HorizontalOptions="Fill" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                        <Label Text="{Binding PreviewName}"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                        <Label Text="{Binding ColorPreviewHint}"
+                               FontSize="14"
+                               TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
+            <FlexLayout BindableLayout.ItemsSource="{Binding ColorOptions}"
+                        Wrap="Wrap"
+                        Direction="Row"
+                        JustifyContent="Start"
+                        AlignItems="Center">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ColorSwatchItem">
+                        <Border WidthRequest="48"
+                                HeightRequest="48"
+                                Margin="4"
+                                StrokeShape="RoundRectangle 24"
+                                StrokeThickness="2"
+                                Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                                BackgroundColor="{Binding DisplayColor}">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                                    <Setter Property="StrokeThickness" Value="3" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HabitFormViewModel}}, Path=SelectColorCommand}"
+                                                      CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+                            <Label Text="&#xE5CA;"
+                                   FontFamily="MaterialIcons"
+                                   FontSize="22"
+                                   TextColor="{StaticResource White}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"
+                                   IsVisible="{Binding IsSelected}" />
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </FlexLayout>
+
+            <Label Text="{Binding ScheduleLabel}" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+
+            <Border Padding="4"
+                    Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariant}, Dark={StaticResource SurfaceVariantDark}}"
+                    StrokeShape="RoundRectangle 14">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                    <Border Grid.Column="0" StrokeShape="RoundRectangle 10" Padding="12,10" BackgroundColor="Transparent">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsSpecificDaysMode}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SetScheduleSpecificDaysCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding ScheduleSpecificDaysLabel}" HorizontalTextAlignment="Center" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsSpecificDaysMode}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+                    <Border Grid.Column="1" StrokeShape="RoundRectangle 10" Padding="12,10" BackgroundColor="Transparent">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsTimesPerWeekMode}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SetScheduleTimesPerWeekCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding ScheduleTimesPerWeekLabel}" HorizontalTextAlignment="Center" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsTimesPerWeekMode}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <VerticalStackLayout IsVisible="{Binding ShowTimesPerWeekSection}" Spacing="8">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="{Binding TimesPerWeekDisplay}" VerticalOptions="Center"
+                           TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                    <Stepper Grid.Column="1" Minimum="1" Maximum="6" Value="{Binding TimesPerWeekStepper}" />
+                </Grid>
+                <Label Text="{Binding TimesPerWeekHint}" FontSize="13"
+                       TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout IsVisible="{Binding ShowSpecificDaysSection}" Spacing="8">
+            <Label Text="{Binding TargetDaysLabel}" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="{Binding EveryDayLabel}" VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                <Switch Grid.Column="1" IsToggled="{Binding IsEveryDay}" />
+            </Grid>
+
+            <CollectionView ItemsSource="{Binding WeekDays}"
+                            SelectionMode="None"
+                            IsVisible="{Binding ShowSpecificDaySelection}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DayToggleItem">
+                        <Grid ColumnDefinitions="*,Auto" Padding="4,0">
+                            <Label Text="{Binding Label}" VerticalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                            <Switch Grid.Column="1" IsToggled="{Binding IsSelected}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            </VerticalStackLayout>
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="{Binding ShowInWidgetLabel}" VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                <Switch Grid.Column="1" IsToggled="{Binding ShowInWidget}" />
+            </Grid>
+
+            <Label Text="{Binding ErrorMessage}"
+                   IsVisible="{Binding HasError}"
+                   TextColor="{AppThemeBinding Light={StaticResource Error}, Dark={StaticResource ErrorDark}}"
+                   FontSize="13" />
+
+            <Button Text="{Binding SaveLabel}" Command="{Binding SaveCommand}" CornerRadius="12" Margin="0,8,0,0" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

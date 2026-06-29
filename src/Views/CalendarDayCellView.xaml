@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Border xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+        xmlns:vm="clr-namespace:OneTapHabits.ViewModels"
+        x:Class="OneTapHabits.Views.CalendarDayCellView"
+        x:DataType="vm:CalendarDayDisplay"
+        Padding="2"
+        StrokeThickness="1"
+        Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}">
+    <Border.Triggers>
+        <DataTrigger TargetType="Border" Binding="{Binding IsToday}" Value="True">
+            <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+        </DataTrigger>
+    </Border.Triggers>
+    <Grid RowDefinitions="Auto,*" RowSpacing="2">
+        <Label Text="{Binding DayNumber}"
+               FontSize="12"
+               HorizontalTextAlignment="Center"
+               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}">
+            <Label.Triggers>
+                <DataTrigger TargetType="Label" Binding="{Binding IsToday}" Value="True">
+                    <Setter Property="FontAttributes" Value="Bold" />
+                </DataTrigger>
+                <DataTrigger TargetType="Label" Binding="{Binding IsCurrentMonth}" Value="False">
+                    <Setter Property="Opacity" Value="0.35" />
+                </DataTrigger>
+            </Label.Triggers>
+        </Label>
+        <HorizontalStackLayout Grid.Row="1"
+                               HorizontalOptions="Center"
+                               VerticalOptions="End"
+                               Spacing="2">
+            <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Lines}" Spacing="2">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CalendarLineDisplay">
+                        <BoxView Color="{Binding LineColor}"
+                                 WidthRequest="3"
+                                 HeightRequest="14"
+                                 CornerRadius="1" />
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </HorizontalStackLayout>
+            <Label Text="{Binding OverflowText}"
+                   IsVisible="{Binding HasOverflow}"
+                   FontSize="9"
+                   VerticalOptions="End"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+        </HorizontalStackLayout>
+    </Grid>
+</Border>

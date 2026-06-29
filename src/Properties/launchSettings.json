@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Android": {
+      "commandName": "Project",
+      "targetFramework": "net9.0-android"
+    },
+    "iOS": {
+      "commandName": "Project",
+      "targetFramework": "net9.0-ios"
+    }
+  }
+}

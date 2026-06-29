@@ -1,0 +1,3 @@
+-keep class com.jon2g.onetaphabits.AppWidgets.** { *; }
+-keep class OneTapHabits.Platforms.Android.AppWidgets.** { *; }
+-keep class OneTapHabits.MainActivity { *; }

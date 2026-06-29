@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="OneTapHabits.MainShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:OneTapHabits.Views"
+    Title="OneTap Habits"
+    FlyoutBehavior="Disabled">
+
+    <TabBar>
+        <ShellContent Route="today"
+                      Title="Today"
+                      Icon="icon_today.png"
+                      ContentTemplate="{DataTemplate views:TodayPage}" />
+
+        <ShellContent Route="calendar"
+                      Title="Calendar"
+                      Icon="icon_calendar.png"
+                      ContentTemplate="{DataTemplate views:CalendarPage}" />
+    </TabBar>
+
+</Shell>

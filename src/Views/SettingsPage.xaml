@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:OneTapHabits.ViewModels"
+             x:Class="OneTapHabits.Views.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             Title="{Binding Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="12">
+            <Label Text="{Binding AccountSectionTitle}" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+
+            <Label Text="{Binding GuestAccountDescription}"
+                   IsVisible="{Binding IsGuest}"
+                   FontSize="14"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+
+            <Label Text="{Binding SignedInEmail}"
+                   IsVisible="{Binding IsSignedIn}"
+                   FontSize="14"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+
+            <VerticalStackLayout IsVisible="{Binding IsGuest}"
+                                 Spacing="12"
+                                 HorizontalOptions="Start">
+                <Border Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}"
+                        StrokeShape="RoundRectangle 24"
+                        HeightRequest="48"
+                        WidthRequest="48">
+                    <Grid>
+                        <ImageButton Source="google_g.png"
+                                     Command="{Binding GoogleSignInCommand}"
+                                     IsEnabled="{Binding CanUseGoogleSignIn}"
+                                     IsVisible="{Binding IsGoogleSignInSupported}"
+                                     BackgroundColor="Transparent"
+                                     Padding="10"
+                                     WidthRequest="48"
+                                     HeightRequest="48"
+                                     SemanticProperties.Description="{Binding GoogleSignInLabel}" />
+                        <ActivityIndicator IsRunning="{Binding IsGoogleSignInBusy}"
+                                           IsVisible="{Binding IsGoogleSignInBusy}"
+                                           Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
+
+            <Button Text="{Binding SignOutLabel}"
+                    Command="{Binding SignOutCommand}"
+                    IsVisible="{Binding IsSignedIn}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Error}, Dark={StaticResource ErrorDark}}"
+                    TextColor="{StaticResource White}" />
+
+            <Label Text="{Binding AccountMessage}"
+                   FontSize="13"
+                   TextColor="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+
+            <Label Text="{Binding AccountErrorMessage}"
+                   IsVisible="{Binding HasAccountError}"
+                   FontSize="13"
+                   TextColor="{AppThemeBinding Light={StaticResource Error}, Dark={StaticResource ErrorDark}}" />
+
+            <BoxView HeightRequest="1"
+                     Color="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                     Margin="0,8" />
+
+            <Label Text="{Binding LanguageLabel}" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+
+            <Border Padding="4"
+                    Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariant}, Dark={StaticResource SurfaceVariantDark}}"
+                    StrokeShape="RoundRectangle 14">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                    <Border Grid.Column="0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,10"
+                            BackgroundColor="Transparent">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsEnglishSelected}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SetEnglishCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding LanguageEnglishLabel}"
+                               HorizontalTextAlignment="Center"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsEnglishSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+
+                    <Border Grid.Column="1"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,10"
+                            BackgroundColor="Transparent">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsSpanishSelected}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SetSpanishCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding LanguageSpanishLabel}"
+                               HorizontalTextAlignment="Center"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsSpanishSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <BoxView HeightRequest="1"
+                     Color="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                     Margin="0,8" />
+
+            <Label Text="{Binding ThemeLabel}" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+
+            <Border Padding="4"
+                    Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariant}, Dark={StaticResource SurfaceVariantDark}}"
+                    StrokeShape="RoundRectangle 14">
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                    <Border Grid.Column="0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="10,10"
+                            BackgroundColor="Transparent">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsThemeSystemSelected}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SetThemeSystemCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding ThemeSystemLabel}"
+                               HorizontalTextAlignment="Center"
+                               FontSize="13"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsThemeSystemSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+
+                    <Border Grid.Column="1"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="10,10"
+                            BackgroundColor="Transparent">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsThemeLightSelected}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SetThemeLightCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding ThemeLightLabel}"
+                               HorizontalTextAlignment="Center"
+                               FontSize="13"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsThemeLightSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+
+                    <Border Grid.Column="2"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="10,10"
+                            BackgroundColor="Transparent">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsThemeDarkSelected}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SetThemeDarkCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding ThemeDarkLabel}"
+                               HorizontalTextAlignment="Center"
+                               FontSize="13"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsThemeDarkSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <BoxView HeightRequest="1"
+                     Color="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                     Margin="0,8" />
+
+            <Label Text="{Binding AboutSectionTitle}" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+            <Label Text="{Binding AppVersionLabel}" FontSize="14"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            <Label Text="{Binding CreatedByLabel}" FontSize="14"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            <Button Text="{Binding ViewSourceLabel}"
+                    Command="{Binding OpenRepositoryCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}"
+                    BorderWidth="0"
+                    Padding="0"
+                    HorizontalOptions="Start" />
+            <Label Text="{Binding LicenseLabel}" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 456 456" role="img" aria-label="OneTap Habits">
+  <style>
+    :root {
+      --logo-bg: #FFFFFF;
+      --color-primario: #22C55E;
+      --logo-blend: multiply;
+    }
+
+    .logo-bg {
+      fill: var(--logo-bg);
+    }
+
+    .logo-shapes {
+      opacity: 0.85;
+      mix-blend-mode: var(--logo-blend);
+    }
+
+    .logo-shape {
+      fill: var(--color-primario);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --logo-bg: #000000;
+        --color-primario: #4ADE80;
+        --logo-blend: screen;
+      }
+    }
+  </style>
+
+  <rect class="logo-bg" x="0" y="0" width="456" height="456" />
+
+  <g class="logo-shapes">
+    <circle class="logo-shape" cx="130" cy="125" r="52" />
+    <rect class="logo-shape" x="72" y="292" width="200" height="48" rx="24" />
+    <rect class="logo-shape" x="148" y="210" width="180" height="48" rx="24" />
+    <rect class="logo-shape" x="224" y="128" width="160" height="48" rx="24" />
+  </g>
+</svg>

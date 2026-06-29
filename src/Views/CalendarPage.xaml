@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:OneTapHabits.ViewModels"
+             xmlns:views="clr-namespace:OneTapHabits.Views"
+             x:Class="OneTapHabits.Views.CalendarPage"
+             x:DataType="vm:CalendarViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Command="{Binding OpenSettingsCommand}"
+                     Order="Primary"
+                     Priority="0"
+                     SemanticProperties.Description="{Binding SettingsLabel}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource FontFamily="MaterialIcons"
+                                 Glyph="&#xE8B8;"
+                                 Size="24"
+                                 Color="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+            </ToolbarItem.IconImageSource>
+        </ToolbarItem>
+    </ContentPage.ToolbarItems>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="12">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <Button Grid.Column="0"
+                    Text="&#xE314;"
+                    FontFamily="MaterialIcons"
+                    FontSize="22"
+                    Command="{Binding PreviousMonthCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}"
+                    Padding="8"
+                    SemanticProperties.Description="{Binding PreviousMonthLabel}" />
+            <Label Grid.Column="1"
+                   Text="{Binding MonthTitle}"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+            <Button Grid.Column="2"
+                    Text="&#xE315;"
+                    FontFamily="MaterialIcons"
+                    FontSize="22"
+                    Command="{Binding NextMonthCommand}"
+                    IsEnabled="{Binding CanGoToNextMonth}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}"
+                    Padding="8"
+                    SemanticProperties.Description="{Binding NextMonthLabel}" />
+        </Grid>
+
+        <Border Grid.Row="1"
+                Padding="12,4"
+                Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}">
+            <Picker Title="{Binding AllHabitsFilterLabel}"
+                    ItemsSource="{Binding HabitFilterOptions}"
+                    ItemDisplayBinding="{Binding Name}"
+                    SelectedItem="{Binding SelectedFilter}" />
+        </Border>
+
+        <Grid Grid.Row="2"
+              ColumnDefinitions="*,*,*,*,*,*,*"
+              ColumnSpacing="4"
+              Margin="0,4,0,0">
+            <Label Grid.Column="0" Text="{Binding WeekdayHeaders[0]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            <Label Grid.Column="1" Text="{Binding WeekdayHeaders[1]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            <Label Grid.Column="2" Text="{Binding WeekdayHeaders[2]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            <Label Grid.Column="3" Text="{Binding WeekdayHeaders[3]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            <Label Grid.Column="4" Text="{Binding WeekdayHeaders[4]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            <Label Grid.Column="5" Text="{Binding WeekdayHeaders[5]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            <Label Grid.Column="6" Text="{Binding WeekdayHeaders[6]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+        </Grid>
+
+        <RefreshView Grid.Row="3" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+            <Grid RowDefinitions="*,Auto">
+                <CollectionView Grid.Row="0"
+                                  ItemsSource="{Binding Weeks}"
+                                  SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="4" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CalendarWeekRow">
+                            <Grid ColumnDefinitions="*,*,*,*,*,*,*" ColumnSpacing="4" HeightRequest="52">
+                                <views:CalendarDayCellView Grid.Column="0" BindingContext="{Binding Day0}" />
+                                <views:CalendarDayCellView Grid.Column="1" BindingContext="{Binding Day1}" />
+                                <views:CalendarDayCellView Grid.Column="2" BindingContext="{Binding Day2}" />
+                                <views:CalendarDayCellView Grid.Column="3" BindingContext="{Binding Day3}" />
+                                <views:CalendarDayCellView Grid.Column="4" BindingContext="{Binding Day4}" />
+                                <views:CalendarDayCellView Grid.Column="5" BindingContext="{Binding Day5}" />
+                                <views:CalendarDayCellView Grid.Column="6" BindingContext="{Binding Day6}" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Label Grid.Row="1"
+                       Text="{Binding EmptyMessage}"
+                       IsVisible="{Binding ShowEmptyMessage}"
+                       HorizontalOptions="Center"
+                       Margin="0,16,0,0"
+                       TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            </Grid>
+        </RefreshView>
+    </Grid>
+</ContentPage>

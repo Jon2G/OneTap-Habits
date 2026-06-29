@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<!-- Required for Firebase Crashlytics on .NET MAUI (no Gradle plugin). See Plugin.Firebase crashlytics.md -->
+	<string name="com.google.firebase.crashlytics.mapping_file_id">none</string>
+	<string name="com.crashlytics.android.build_id">1.0.0</string>
+	<string name="widget_description">Complete today\'s habits in one tap</string>
+	<string name="widget_open_app">Open OneTap Habits</string>
+	<string name="widget_open_app_hint">Tap to get started</string>
+	<string name="widget_all_done">All done for today!</string>
+	<string name="widget_no_habits">No habits for the widget today</string>
+	<string name="widget_overflow">+%1$d more in app</string>
+</resources>

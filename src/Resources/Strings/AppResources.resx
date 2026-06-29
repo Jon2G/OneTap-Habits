@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>OneTap Habits</value>
+  </data>
+  <data name="LoginTitle" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="SignIn" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>Create account</value>
+  </data>
+  <data name="TodayTitle" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="TabToday" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="TabCalendar" xml:space="preserve">
+    <value>Calendar</value>
+  </data>
+  <data name="CalendarTitle" xml:space="preserve">
+    <value>Calendar</value>
+  </data>
+  <data name="AllHabitsFilter" xml:space="preserve">
+    <value>All habits</value>
+  </data>
+  <data name="NoCompletionsThisMonth" xml:space="preserve">
+    <value>No completions this month</value>
+  </data>
+  <data name="PreviousMonth" xml:space="preserve">
+    <value>Previous month</value>
+  </data>
+  <data name="NextMonth" xml:space="preserve">
+    <value>Next month</value>
+  </data>
+  <data name="DayMonShort" xml:space="preserve"><value>Mo</value></data>
+  <data name="DayTueShort" xml:space="preserve"><value>Tu</value></data>
+  <data name="DayWedShort" xml:space="preserve"><value>We</value></data>
+  <data name="DayThuShort" xml:space="preserve"><value>Th</value></data>
+  <data name="DayFriShort" xml:space="preserve"><value>Fr</value></data>
+  <data name="DaySatShort" xml:space="preserve"><value>Sa</value></data>
+  <data name="DaySunShort" xml:space="preserve"><value>Su</value></data>
+  <data name="AddHabit" xml:space="preserve">
+    <value>Add habit</value>
+  </data>
+  <data name="SampleHabitGym" xml:space="preserve">
+    <value>Go to gym</value>
+  </data>
+  <data name="SampleHabitMedication" xml:space="preserve">
+    <value>Take medication</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="AccountSection" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="GuestAccountDescription" xml:space="preserve">
+    <value>You're using guest mode. Your habits stay on this device until you sign in with Google to sync.</value>
+  </data>
+  <data name="SignedInAs" xml:space="preserve">
+    <value>Signed in as {0}</value>
+  </data>
+  <data name="SyncSuccess" xml:space="preserve">
+    <value>Signed in. Your local habits were synced to the cloud.</value>
+  </data>
+  <data name="SignedOutToGuest" xml:space="preserve">
+    <value>Signed out. Your habits are available offline on this device.</value>
+  </data>
+  <data name="SignOut" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Streak" xml:space="preserve">
+    <value>Streak: {0}</value>
+  </data>
+  <data name="HabitName" xml:space="preserve">
+    <value>What do you want to track?</value>
+  </data>
+  <data name="HabitNamePlaceholder" xml:space="preserve">
+    <value>e.g. Drink water, Read, Walk</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ShowInWidget" xml:space="preserve">
+    <value>Show in widget</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageSpanish" xml:space="preserve">
+    <value>Español</value>
+  </data>
+  <data name="AboutSection" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="CreatedBy" xml:space="preserve">
+    <value>Created by {0}</value>
+  </data>
+  <data name="ViewSourceOnGitHub" xml:space="preserve">
+    <value>View source on GitHub</value>
+  </data>
+  <data name="MitLicense" xml:space="preserve">
+    <value>MIT License</value>
+  </data>
+  <data name="LoginTagline" xml:space="preserve">
+    <value>One tap. Habit done.</value>
+  </data>
+  <data name="GoogleSignInComingSoon" xml:space="preserve">
+    <value>Google Sign-In (coming soon)</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="ColorLabel" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="ColorPreview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="ColorPreviewHint" xml:space="preserve">
+    <value>Accent on Today and widget</value>
+  </data>
+  <data name="TargetDays" xml:space="preserve">
+    <value>Active days</value>
+  </data>
+  <data name="ScheduleLabel" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="ScheduleSpecificDays" xml:space="preserve">
+    <value>Specific days</value>
+  </data>
+  <data name="ScheduleTimesPerWeek" xml:space="preserve">
+    <value>Times per week</value>
+  </data>
+  <data name="TimesPerWeekFormat" xml:space="preserve">
+    <value>{0} times per week</value>
+  </data>
+  <data name="TimesPerWeekHint" xml:space="preserve">
+    <value>Complete any days you like. Extra completions count.</value>
+  </data>
+  <data name="WeeklyProgressFormat" xml:space="preserve">
+    <value>{0}/{1} this week</value>
+  </data>
+  <data name="WeeklyStreakFormat" xml:space="preserve">
+    <value>Week streak: {0}</value>
+  </data>
+  <data name="ErrorTimesPerWeekRequired" xml:space="preserve">
+    <value>Choose between 1 and 6 times per week.</value>
+  </data>
+  <data name="EveryDay" xml:space="preserve">
+    <value>Every day</value>
+  </data>
+  <data name="DayMon" xml:space="preserve"><value>Monday</value></data>
+  <data name="DayTue" xml:space="preserve"><value>Tuesday</value></data>
+  <data name="DayWed" xml:space="preserve"><value>Wednesday</value></data>
+  <data name="DayThu" xml:space="preserve"><value>Thursday</value></data>
+  <data name="DayFri" xml:space="preserve"><value>Friday</value></data>
+  <data name="DaySat" xml:space="preserve"><value>Saturday</value></data>
+  <data name="DaySun" xml:space="preserve"><value>Sunday</value></data>
+  <data name="Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="TapToComplete" xml:space="preserve">
+    <value>Tap to complete</value>
+  </data>
+  <data name="ErrorEmailRequired" xml:space="preserve">
+    <value>Enter your email address.</value>
+  </data>
+  <data name="ErrorPasswordRequired" xml:space="preserve">
+    <value>Enter your password.</value>
+  </data>
+  <data name="ErrorEmailInvalid" xml:space="preserve">
+    <value>Enter a valid email address.</value>
+  </data>
+  <data name="ErrorMissingFields" xml:space="preserve">
+    <value>Fill in email and password to continue.</value>
+  </data>
+  <data name="ErrorInvalidCredentials" xml:space="preserve">
+    <value>Incorrect email or password. Try again.</value>
+  </data>
+  <data name="ErrorEmailInUse" xml:space="preserve">
+    <value>This email is already registered. Sign in instead.</value>
+  </data>
+  <data name="ErrorWeakPassword" xml:space="preserve">
+    <value>Password must be at least 6 characters.</value>
+  </data>
+  <data name="ErrorNetwork" xml:space="preserve">
+    <value>Check your connection and try again.</value>
+  </data>
+  <data name="ErrorTooManyRequests" xml:space="preserve">
+    <value>Too many attempts. Wait a moment and try again.</value>
+  </data>
+  <data name="ErrorUnknown" xml:space="preserve">
+    <value>Something went wrong. Please try again.</value>
+  </data>
+  <data name="ErrorHabitNameRequired" xml:space="preserve">
+    <value>Add a name so you know what you're tracking.</value>
+  </data>
+  <data name="ErrorTargetDayRequired" xml:space="preserve">
+    <value>Select at least one active day.</value>
+  </data>
+  <data name="GoogleSignIn" xml:space="preserve">
+    <value>Sign in with Google</value>
+  </data>
+  <data name="OrContinueWith" xml:space="preserve">
+    <value>or continue with</value>
+  </data>
+  <data name="ErrorGoogleNotConfigured" xml:space="preserve">
+    <value>Google Sign-In is not set up yet. Enable Google in Firebase and add your app SHA-1 fingerprints.</value>
+  </data>
+</root>
