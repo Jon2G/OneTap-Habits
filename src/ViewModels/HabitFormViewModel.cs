@@ -7,11 +7,15 @@ using System.Collections.ObjectModel;
 
 namespace OneTapHabits.ViewModels;
 
-public partial class HabitFormViewModel : ObservableObject
+public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 {
+	private static readonly int[] AllDays = [1, 2, 3, 4, 5, 6, 7];
+
 	private readonly IHabitService _habitService;
 	private readonly ILocalizationService _localization;
 	private readonly IWidgetRefreshService _widgetRefresh;
+
+	private string? _editingHabitId;
 
 	[ObservableProperty]
 	private string name = string.Empty;
@@ -34,6 +38,7 @@ public partial class HabitFormViewModel : ObservableObject
 	[ObservableProperty]
 	private int timesPerWeek = 3;
 
+	public bool IsEditing => !string.IsNullOrWhiteSpace(_editingHabitId);
 	public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 	public bool ShowSpecificDaySelection => ScheduleMode == HabitScheduleMode.SpecificDays && !IsEveryDay;
 	public bool ShowSpecificDaysSection => ScheduleMode == HabitScheduleMode.SpecificDays;
@@ -68,7 +73,7 @@ public partial class HabitFormViewModel : ObservableObject
 		}
 	}
 
-	public string Title => _localization.Get("AddHabit");
+	public string Title => _localization.Get(IsEditing ? "EditHabit" : "AddHabit");
 	public string HabitNameLabel => _localization.Get("HabitName");
 	public string HabitNamePlaceholder => _localization.Get("HabitNamePlaceholder");
 	public string ColorLabel => _localization.Get("ColorLabel");
@@ -93,6 +98,19 @@ public partial class HabitFormViewModel : ObservableObject
 
 	public string PreviewName => string.IsNullOrWhiteSpace(Name) ? HabitNamePlaceholder : Name.Trim();
 	public Color PreviewAccentColor => Color.FromArgb(SelectedColorHex);
+
+	public void ApplyQueryAttributes(IDictionary<string, object> query)
+	{
+		if (query.TryGetValue("habitId", out var value) && value is string habitId && !string.IsNullOrWhiteSpace(habitId))
+		{
+			_ = LoadForEditAsync(habitId);
+			return;
+		}
+
+		_editingHabitId = null;
+		OnPropertyChanged(nameof(IsEditing));
+		OnPropertyChanged(nameof(Title));
+	}
 
 	partial void OnNameChanged(string value) => OnPropertyChanged(nameof(PreviewName));
 
@@ -187,15 +205,23 @@ public partial class HabitFormViewModel : ObservableObject
 
 		try
 		{
-			var habit = new Habit
+			Habit habit;
+			if (IsEditing)
 			{
-				Name = Name.Trim(),
-				ColorHex = HabitColorPalette.Normalize(SelectedColorHex),
-				ShowInWidget = ShowInWidget,
-				TargetDays = targetDays,
-				ScheduleMode = mode,
-				TimesPerWeek = mode == HabitScheduleMode.TimesPerWeek ? weeklyTarget : 1
-			};
+				habit = await _habitService.GetHabitAsync(_editingHabitId!)
+					?? throw new InvalidOperationException(_localization.Get("ErrorHabitNotFound"));
+			}
+			else
+			{
+				habit = new Habit();
+			}
+
+			habit.Name = Name.Trim();
+			habit.ColorHex = HabitColorPalette.Normalize(SelectedColorHex);
+			habit.ShowInWidget = ShowInWidget;
+			habit.TargetDays = targetDays;
+			habit.ScheduleMode = mode;
+			habit.TimesPerWeek = mode == HabitScheduleMode.TimesPerWeek ? weeklyTarget : 1;
 
 			await _habitService.SaveHabitAsync(habit);
 			await _widgetRefresh.RefreshAsync();
@@ -205,6 +231,57 @@ public partial class HabitFormViewModel : ObservableObject
 		{
 			ErrorMessage = UserFriendlyErrorMapper.FromException(ex, _localization);
 		}
+	}
+
+	private async Task LoadForEditAsync(string habitId)
+	{
+		ErrorMessage = null;
+		_editingHabitId = habitId;
+		OnPropertyChanged(nameof(IsEditing));
+		OnPropertyChanged(nameof(Title));
+
+		var habit = await _habitService.GetHabitAsync(habitId);
+		if (habit is null)
+		{
+			ErrorMessage = _localization.Get("ErrorHabitNotFound");
+			await Shell.Current.GoToAsync("..");
+			return;
+		}
+
+		Name = habit.Name;
+		SelectedColorHex = HabitColorPalette.Normalize(habit.ColorHex);
+		ShowInWidget = habit.ShowInWidget;
+		ScheduleMode = habit.ScheduleMode;
+		TimesPerWeek = habit.TimesPerWeek;
+
+		if (habit.ScheduleMode == HabitScheduleMode.SpecificDays)
+		{
+			var selectedDays = habit.TargetDays.ToHashSet();
+			IsEveryDay = AllDays.All(selectedDays.Contains);
+			foreach (var day in WeekDays)
+			{
+				day.IsSelected = selectedDays.Contains(day.Day);
+			}
+		}
+		else
+		{
+			IsEveryDay = true;
+			foreach (var day in WeekDays)
+			{
+				day.IsSelected = true;
+			}
+		}
+
+		SyncColorSelection();
+		OnPropertyChanged(nameof(ShowSpecificDaySelection));
+		OnPropertyChanged(nameof(ShowSpecificDaysSection));
+		OnPropertyChanged(nameof(ShowTimesPerWeekSection));
+		OnPropertyChanged(nameof(IsSpecificDaysMode));
+		OnPropertyChanged(nameof(IsTimesPerWeekMode));
+		OnPropertyChanged(nameof(TimesPerWeekDisplay));
+		OnPropertyChanged(nameof(TimesPerWeekStepper));
+		OnPropertyChanged(nameof(PreviewName));
+		OnPropertyChanged(nameof(PreviewAccentColor));
 	}
 
 	private void SyncColorSelection()

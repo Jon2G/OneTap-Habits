@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:OneTapHabits.ViewModels"
+             xmlns:behaviors="clr-namespace:OneTapHabits.Behaviors"
              x:Class="OneTapHabits.Views.TodayPage"
              x:DataType="vm:TodayViewModel"
              Title="{Binding Title}">
@@ -27,10 +28,14 @@
                     <DataTemplate x:DataType="vm:TodayHabitItem">
                         <Border Margin="0,0,0,12" Padding="16"
                                 Stroke="{Binding CompletedStrokeColor}"
-                                BackgroundColor="{Binding CardBackgroundColor}">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:TodayViewModel}}, Path=ToggleHabitCommand}" CommandParameter="{Binding .}" />
-                            </Border.GestureRecognizers>
+                                BackgroundColor="{Binding CardBackgroundColor}"
+                                SemanticProperties.Hint="{Binding Source={RelativeSource AncestorType={x:Type vm:TodayViewModel}}, Path=HabitLongPressHint}">
+                            <Border.Behaviors>
+                                <behaviors:LongPressBehavior
+                                    TapCommand="{Binding Source={RelativeSource AncestorType={x:Type vm:TodayViewModel}}, Path=ToggleHabitCommand}"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:TodayViewModel}}, Path=EditHabitCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.Behaviors>
                             <Grid ColumnDefinitions="4,*" ColumnSpacing="12">
                                 <BoxView Grid.Column="0" Color="{Binding AccentColor}" CornerRadius="2" />
                                 <VerticalStackLayout Grid.Column="1" Spacing="4">

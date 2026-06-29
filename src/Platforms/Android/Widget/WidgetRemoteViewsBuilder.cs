@@ -7,6 +7,7 @@ using Android.Views;
 using Android.Widget;
 using OneTapHabits.Models;
 using OneTapHabits.Platforms.Android.Services;
+using OneTapHabits.Services.Widget;
 
 namespace OneTapHabits.Platforms.Android.AppWidgets;
 
@@ -72,6 +73,15 @@ public static class WidgetRemoteViewsBuilder
 			var habit = snapshot.Habits[i];
 			views.SetViewVisibility(CellIds[i], ViewStates.Visible);
 			views.SetTextViewText(NameIds[i], habit.Name);
+			if (HabitNameDisplayHelper.IsSingleEmoji(habit.Name))
+			{
+				views.SetTextViewTextSize(
+					NameIds[i],
+					(int)ComplexUnitType.Sp,
+					HabitNameDisplayHelper.WidgetSingleEmojiTextSizeSp);
+				views.SetInt(NameIds[i], "setMaxLines", 1);
+			}
+
 			views.SetInt(ColorBarIds[i], "setBackgroundColor", ParseColor(habit.ColorHex));
 			views.SetOnClickPendingIntent(CellIds[i], CreateCompleteIntent(context, habit.Id, i));
 		}

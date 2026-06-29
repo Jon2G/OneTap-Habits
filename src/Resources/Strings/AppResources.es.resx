@@ -64,6 +64,12 @@
   <data name="AddHabit" xml:space="preserve">
     <value>Agregar hábito</value>
   </data>
+  <data name="EditHabit" xml:space="preserve">
+    <value>Editar hábito</value>
+  </data>
+  <data name="HabitLongPressHint" xml:space="preserve">
+    <value>Toca para completar, mantén pulsado para editar</value>
+  </data>
   <data name="SampleHabitGym" xml:space="preserve">
     <value>Ir al gimnasio</value>
   </data>
@@ -229,6 +235,9 @@
   </data>
   <data name="ErrorHabitNameRequired" xml:space="preserve">
     <value>Escribe un nombre para saber qué estás siguiendo.</value>
+  </data>
+  <data name="ErrorHabitNotFound" xml:space="preserve">
+    <value>No se encontró este hábito.</value>
   </data>
   <data name="ErrorTargetDayRequired" xml:space="preserve">
     <value>Selecciona al menos un día activo.</value>

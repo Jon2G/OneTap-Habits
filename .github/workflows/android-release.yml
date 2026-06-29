@@ -117,6 +117,10 @@ jobs:
           if ($apk) {
             Rename-Item -Path $apk.FullName -NewName $newName
             Copy-Item -Path "./artifacts/$newName" -Destination "./artifacts/$stableName" -Force
+            Get-ChildItem -Path ./artifacts -Filter "*.apk" |
+              Where-Object { $_.Name -ne $newName -and $_.Name -ne $stableName } |
+              Remove-Item -Force
+            Write-Host "Published APK: $newName (+ stable copy: $stableName)"
           }
         shell: pwsh
 

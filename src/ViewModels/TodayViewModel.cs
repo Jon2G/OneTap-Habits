@@ -45,6 +45,7 @@ public partial class TodayViewModel : ObservableObject
 	public string Title => _localization.Get("TodayTitle");
 	public string AddHabitLabel => _localization.Get("AddHabit");
 	public string SettingsLabel => _localization.Get("Settings");
+	public string HabitLongPressHint => _localization.Get("HabitLongPressHint");
 
 	[RelayCommand]
 	public async Task LoadAsync()
@@ -107,6 +108,12 @@ public partial class TodayViewModel : ObservableObject
 		var next = !item.IsCompleted;
 		await _logService.SetCompletedAsync(item.Habit.Id, today, next);
 		await LoadAsync();
+	}
+
+	[RelayCommand]
+	private async Task EditHabitAsync(TodayHabitItem item)
+	{
+		await Shell.Current.GoToAsync($"habitForm?habitId={Uri.EscapeDataString(item.Habit.Id)}");
 	}
 
 	[RelayCommand]
