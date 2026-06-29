@@ -2,15 +2,14 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:id="@+id/widget_root"
 	android:layout_width="match_parent"
-	android:layout_height="wrap_content"
+	android:layout_height="match_parent"
 	android:background="@drawable/widget_background"
 	android:padding="6dp">
 
 	<LinearLayout
 		android:id="@+id/empty_container"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_gravity="center"
+		android:layout_height="match_parent"
 		android:gravity="center"
 		android:orientation="vertical"
 		android:padding="12dp"
@@ -40,26 +39,26 @@
 	<LinearLayout
 		android:id="@+id/grid_container"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
+		android:layout_height="match_parent"
 		android:orientation="vertical"
 		android:visibility="gone">
 
 		<LinearLayout
 			android:id="@+id/row0"
 			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
+			android:layout_height="0dp"
+			android:layout_weight="1"
 			android:orientation="horizontal"
 			android:visibility="gone">
 
 			<LinearLayout
 				android:id="@+id/cell0"
 				android:layout_width="0dp"
-				android:layout_height="wrap_content"
+				android:layout_height="match_parent"
 				android:layout_margin="3dp"
 				android:layout_weight="1"
 				android:background="@drawable/widget_cell_background"
 				android:gravity="center"
-				android:minHeight="48dp"
 				android:orientation="vertical"
 				android:padding="6dp"
 				android:visibility="gone">
@@ -79,7 +78,7 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="2"
+					android:maxLines="3"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
 			</LinearLayout>
@@ -87,12 +86,11 @@
 			<LinearLayout
 				android:id="@+id/cell1"
 				android:layout_width="0dp"
-				android:layout_height="wrap_content"
+				android:layout_height="match_parent"
 				android:layout_margin="3dp"
 				android:layout_weight="1"
 				android:background="@drawable/widget_cell_background"
 				android:gravity="center"
-				android:minHeight="48dp"
 				android:orientation="vertical"
 				android:padding="6dp"
 				android:visibility="gone">
@@ -112,7 +110,7 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="2"
+					android:maxLines="3"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
 			</LinearLayout>
@@ -121,19 +119,19 @@
 		<LinearLayout
 			android:id="@+id/row1"
 			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
+			android:layout_height="0dp"
+			android:layout_weight="1"
 			android:orientation="horizontal"
 			android:visibility="gone">
 
 			<LinearLayout
 				android:id="@+id/cell2"
 				android:layout_width="0dp"
-				android:layout_height="wrap_content"
+				android:layout_height="match_parent"
 				android:layout_margin="3dp"
 				android:layout_weight="1"
 				android:background="@drawable/widget_cell_background"
 				android:gravity="center"
-				android:minHeight="48dp"
 				android:orientation="vertical"
 				android:padding="6dp"
 				android:visibility="gone">
@@ -153,7 +151,7 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="2"
+					android:maxLines="3"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
 			</LinearLayout>
@@ -161,12 +159,11 @@
 			<LinearLayout
 				android:id="@+id/cell3"
 				android:layout_width="0dp"
-				android:layout_height="wrap_content"
+				android:layout_height="match_parent"
 				android:layout_margin="3dp"
 				android:layout_weight="1"
 				android:background="@drawable/widget_cell_background"
 				android:gravity="center"
-				android:minHeight="48dp"
 				android:orientation="vertical"
 				android:padding="6dp"
 				android:visibility="gone">
@@ -186,7 +183,7 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="2"
+					android:maxLines="3"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
 			</LinearLayout>
@@ -195,19 +192,19 @@
 		<LinearLayout
 			android:id="@+id/row2"
 			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
+			android:layout_height="0dp"
+			android:layout_weight="1"
 			android:orientation="horizontal"
 			android:visibility="gone">
 
 			<LinearLayout
 				android:id="@+id/cell4"
 				android:layout_width="0dp"
-				android:layout_height="wrap_content"
+				android:layout_height="match_parent"
 				android:layout_margin="3dp"
 				android:layout_weight="1"
 				android:background="@drawable/widget_cell_background"
 				android:gravity="center"
-				android:minHeight="48dp"
 				android:orientation="vertical"
 				android:padding="6dp"
 				android:visibility="gone">
@@ -227,7 +224,7 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="2"
+					android:maxLines="3"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
 			</LinearLayout>
@@ -235,12 +232,11 @@
 			<LinearLayout
 				android:id="@+id/cell5"
 				android:layout_width="0dp"
-				android:layout_height="wrap_content"
+				android:layout_height="match_parent"
 				android:layout_margin="3dp"
 				android:layout_weight="1"
 				android:background="@drawable/widget_cell_background"
 				android:gravity="center"
-				android:minHeight="48dp"
 				android:orientation="vertical"
 				android:padding="6dp"
 				android:visibility="gone">
@@ -260,7 +256,7 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="2"
+					android:maxLines="3"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
 			</LinearLayout>
