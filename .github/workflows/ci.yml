@@ -42,6 +42,16 @@ jobs:
       - name: Apply CI SDK pin
         run: cp global.ci.json global.json
 
+      - name: Prepare google-services.json
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > src/google-services.json
+          else
+            cp src/google-services.json.example src/google-services.json
+          fi
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -66,8 +76,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Apply CI SDK pin
+        run: cp global.ci.json global.json
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
+
       - name: Test
         run: dotnet test tests/OneTapHabits.Tests/OneTapHabits.Tests.csproj -c Release --verbosity minimal

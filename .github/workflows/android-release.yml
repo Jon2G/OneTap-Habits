@@ -30,11 +30,17 @@ jobs:
           [IO.File]::WriteAllBytes("src/onetaphabits.keystore", $keystoreBytes)
         shell: pwsh
 
-      - name: Decode google-services.json
-        if: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
+      - name: Prepare google-services.json
         run: |
-          $jsonBytes = [Convert]::FromBase64String("${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}")
-          [IO.File]::WriteAllBytes("src/google-services.json", $jsonBytes)
+          $secret = "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}"
+          if (-not [string]::IsNullOrWhiteSpace($secret)) {
+            $jsonBytes = [Convert]::FromBase64String($secret)
+            [IO.File]::WriteAllBytes("src/google-services.json", $jsonBytes)
+            Write-Host "google-services.json created from secret."
+          } else {
+            Copy-Item "src/google-services.json.example" "src/google-services.json"
+            Write-Host "Using google-services.json.example (secret not configured)."
+          }
         shell: pwsh
 
       - name: Setup .NET
