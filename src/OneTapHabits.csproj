@@ -83,6 +83,7 @@
 		<AndroidResource Include="Platforms\Android\Resources\xml\habits_widget_info.xml" />
 		<AndroidResource Include="Platforms\Android\Resources\drawable\widget_background.xml" />
 		<AndroidResource Include="Platforms\Android\Resources\drawable\widget_cell_background.xml" />
+		<AndroidResource Include="Platforms\Android\Resources\xml\file_paths.xml" />
 	</ItemGroup>
 
 </Project>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="OneTapHabits.Views.UpdatePopupPage"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}"
+             Shell.PresentationMode="ModalAnimated">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="24" RowSpacing="20">
+        <VerticalStackLayout Grid.Row="0" Spacing="4" HorizontalOptions="Center" Margin="0,16,0,0">
+            <Label x:Name="HeaderTitle"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+            <Label x:Name="VersionLabel"
+                   FontSize="14"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+        </VerticalStackLayout>
+
+        <Border Grid.Row="1"
+                x:Name="ChangelogBorder"
+                Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}"
+                StrokeShape="RoundRectangle 12"
+                Padding="0">
+            <WebView x:Name="ChangelogWebView"
+                     HeightRequest="280"
+                     BackgroundColor="Transparent"
+                     VerticalOptions="FillAndExpand" />
+        </Border>
+
+        <VerticalStackLayout Grid.Row="2" Spacing="8">
+            <Label x:Name="ProgressLabel"
+                   IsVisible="False"
+                   HorizontalTextAlignment="Center"
+                   FontSize="13"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+
+            <Grid ColumnDefinitions="*,12,*">
+                <Button x:Name="LaterButton"
+                        Grid.Column="0"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariant}, Dark={StaticResource SurfaceVariantDark}}"
+                        TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}"
+                        CornerRadius="12"
+                        HeightRequest="52"
+                        Clicked="OnLaterClicked" />
+                <Button x:Name="InstallButton"
+                        Grid.Column="2"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}"
+                        TextColor="{StaticResource White}"
+                        FontAttributes="Bold"
+                        CornerRadius="12"
+                        HeightRequest="52"
+                        Clicked="OnInstallClicked" />
+            </Grid>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

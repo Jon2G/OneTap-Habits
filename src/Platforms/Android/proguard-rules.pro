@@ -1,3 +1,6 @@
 -keep class com.jon2g.onetaphabits.AppWidgets.** { *; }
 -keep class OneTapHabits.Platforms.Android.AppWidgets.** { *; }
 -keep class OneTapHabits.MainActivity { *; }
+-keep class OneTapHabits.Services.UpdateService { *; }
+-keep class OneTapHabits.Services.UpdateCoordinator { *; }
+-keep class OneTapHabits.Views.UpdatePopupPage { *; }

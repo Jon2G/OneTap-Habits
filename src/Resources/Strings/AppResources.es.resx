@@ -251,4 +251,34 @@
   <data name="ErrorGoogleNotConfigured" xml:space="preserve">
     <value>Google Sign-In aún no está configurado. Actívalo en Firebase y agrega las huellas SHA-1 de la app.</value>
   </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Buscar actualizaciones</value>
+  </data>
+  <data name="UpdateAvailableTitle" xml:space="preserve">
+    <value>Actualización disponible</value>
+  </data>
+  <data name="UpdateLater" xml:space="preserve">
+    <value>Después</value>
+  </data>
+  <data name="UpdateInstall" xml:space="preserve">
+    <value>Instalar</value>
+  </data>
+  <data name="UpdateDownloading" xml:space="preserve">
+    <value>Descargando actualización... {0}%</value>
+  </data>
+  <data name="UpdateStartingInstaller" xml:space="preserve">
+    <value>Iniciando instalador...</value>
+  </data>
+  <data name="UpdateDownloadFailed" xml:space="preserve">
+    <value>La descarga falló. Inténtalo de nuevo.</value>
+  </data>
+  <data name="UpdateInstallFailed" xml:space="preserve">
+    <value>La instalación falló. Si ves un error de paquete en conflicto, desinstala la app primero y vuelve a instalar desde GitHub.</value>
+  </data>
+  <data name="UpdateOpenGitHub" xml:space="preserve">
+    <value>Abrir releases en GitHub</value>
+  </data>
+  <data name="UpdateUpToDate" xml:space="preserve">
+    <value>Tienes la última versión.</value>
+  </data>
 </root>

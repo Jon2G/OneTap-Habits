@@ -15,6 +15,7 @@ public partial class SettingsPage : ContentPage
 		base.OnAppearing();
 		if (BindingContext is SettingsViewModel viewModel)
 		{
+			viewModel.Navigation = Navigation;
 			viewModel.RefreshChoices();
 		}
 	}

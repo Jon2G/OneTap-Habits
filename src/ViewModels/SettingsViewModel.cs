@@ -14,6 +14,7 @@ public partial class SettingsViewModel : ObservableObject
 	private readonly ILocalizationService _localization;
 	private readonly IWidgetRefreshService _widgetRefresh;
 	private readonly IThemeService _themeService;
+	private readonly UpdateCoordinator _updateCoordinator;
 
 	[ObservableProperty]
 	private string? accountMessage;
@@ -28,13 +29,17 @@ public partial class SettingsViewModel : ObservableObject
 		IAuthService authService,
 		ILocalizationService localization,
 		IWidgetRefreshService widgetRefresh,
-		IThemeService themeService)
+		IThemeService themeService,
+		UpdateCoordinator updateCoordinator)
 	{
 		_authService = authService;
 		_localization = localization;
 		_widgetRefresh = widgetRefresh;
 		_themeService = themeService;
+		_updateCoordinator = updateCoordinator;
 	}
+
+	public INavigation? Navigation { get; set; }
 
 	public string Title => _localization.Get("Settings");
 	public string AccountSectionTitle => _localization.Get("AccountSection");
@@ -54,6 +59,8 @@ public partial class SettingsViewModel : ObservableObject
 	public string CreatedByLabel => string.Format(_localization.Get("CreatedBy"), CreatorName);
 	public string ViewSourceLabel => _localization.Get("ViewSourceOnGitHub");
 	public string LicenseLabel => _localization.Get("MitLicense");
+	public string CheckForUpdatesLabel => _localization.Get("CheckForUpdates");
+	public bool IsCheckForUpdatesSupported => DeviceInfo.Platform == DevicePlatform.Android;
 
 	public bool IsGuest => _authService.IsGuest;
 	public bool IsSignedIn => _authService.IsSignedIn;
@@ -158,6 +165,17 @@ public partial class SettingsViewModel : ObservableObject
 		await Launcher.Default.OpenAsync(RepositoryUrl);
 	}
 
+	[RelayCommand]
+	private async Task CheckForUpdatesAsync()
+	{
+		if (Navigation is null)
+		{
+			return;
+		}
+
+		await _updateCoordinator.CheckForUpdatesAsync(Navigation, manual: true);
+	}
+
 	private void ApplyTheme(ThemePreference preference)
 	{
 		_themeService.SetTheme(preference);
@@ -203,5 +221,6 @@ public partial class SettingsViewModel : ObservableObject
 		OnPropertyChanged(nameof(CreatedByLabel));
 		OnPropertyChanged(nameof(ViewSourceLabel));
 		OnPropertyChanged(nameof(LicenseLabel));
+		OnPropertyChanged(nameof(CheckForUpdatesLabel));
 	}
 }

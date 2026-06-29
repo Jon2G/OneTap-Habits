@@ -251,4 +251,34 @@
   <data name="ErrorGoogleNotConfigured" xml:space="preserve">
     <value>Google Sign-In is not set up yet. Enable Google in Firebase and add your app SHA-1 fingerprints.</value>
   </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="UpdateAvailableTitle" xml:space="preserve">
+    <value>Update available</value>
+  </data>
+  <data name="UpdateLater" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="UpdateInstall" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="UpdateDownloading" xml:space="preserve">
+    <value>Downloading update... {0}%</value>
+  </data>
+  <data name="UpdateStartingInstaller" xml:space="preserve">
+    <value>Starting installer...</value>
+  </data>
+  <data name="UpdateDownloadFailed" xml:space="preserve">
+    <value>Download failed. Please try again.</value>
+  </data>
+  <data name="UpdateInstallFailed" xml:space="preserve">
+    <value>Install failed. If you see a conflicting package error, uninstall this app first, then reinstall from GitHub.</value>
+  </data>
+  <data name="UpdateOpenGitHub" xml:space="preserve">
+    <value>Open GitHub releases</value>
+  </data>
+  <data name="UpdateUpToDate" xml:space="preserve">
+    <value>You're on the latest version.</value>
+  </data>
 </root>
