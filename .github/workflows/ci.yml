@@ -69,8 +69,8 @@ jobs:
 
       - name: Restore dependencies
         run: |
-          dotnet restore src/OneTapHabits.Core/OneTapHabits.Core.csproj
           dotnet restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-android
+          dotnet restore src/OneTapHabits.Core/OneTapHabits.Core.csproj
 
       - name: Build
         run: dotnet build ${{ env.PROJECT_PATH }} -f net9.0-android -c Debug --no-restore
