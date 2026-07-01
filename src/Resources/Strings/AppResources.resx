@@ -356,4 +356,58 @@
   <data name="WidgetTintStrong" xml:space="preserve">
     <value>Strong</value>
   </data>
+  <data name="CalendarInsightsTitle" xml:space="preserve">
+    <value>Your progress</value>
+  </data>
+  <data name="CalendarMetricCurrentStreak" xml:space="preserve">
+    <value>Current streak</value>
+  </data>
+  <data name="CalendarMetricMonthProgress" xml:space="preserve">
+    <value>Month progress</value>
+  </data>
+  <data name="CalendarMetricWeekProgress" xml:space="preserve">
+    <value>This week</value>
+  </data>
+  <data name="CalendarMetricTodayStatus" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="CalendarMetricMonthCompletions" xml:space="preserve">
+    <value>Month completions</value>
+  </data>
+  <data name="CalendarMetricLongestStreak" xml:space="preserve">
+    <value>Best streak</value>
+  </data>
+  <data name="CalendarMetricHabitsOnStreak" xml:space="preserve">
+    <value>Habits on streak</value>
+  </data>
+  <data name="CalendarMetricTodayOverview" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="CalendarTodayDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="CalendarTodayPartial" xml:space="preserve">
+    <value>In progress</value>
+  </data>
+  <data name="CalendarTodayPending" xml:space="preserve">
+    <value>Not started</value>
+  </data>
+  <data name="CalendarMotivationStreakMilestone" xml:space="preserve">
+    <value>{0}-day streak! You're building something real.</value>
+  </data>
+  <data name="CalendarMotivationStrongMonth" xml:space="preserve">
+    <value>Strong month — {0}% of your scheduled days complete.</value>
+  </data>
+  <data name="CalendarMotivationAllDoneToday" xml:space="preserve">
+    <value>All done for today. Great work!</value>
+  </data>
+  <data name="CalendarMotivationAlmostWeeklyGoal" xml:space="preserve">
+    <value>Just {0} more this week to hit your goal.</value>
+  </data>
+  <data name="CalendarMotivationRestart" xml:space="preserve">
+    <value>Every streak starts with one tap. You've got this.</value>
+  </data>
+  <data name="CalendarMotivationKeepGoing" xml:space="preserve">
+    <value>Keep showing up — small steps add up.</value>
+  </data>
 </root>

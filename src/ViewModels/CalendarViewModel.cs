@@ -9,8 +9,12 @@ namespace OneTapHabits.ViewModels;
 
 public partial class CalendarViewModel : ObservableObject
 {
+	private const int StreakLookbackDays = 400;
+
 	private readonly IHabitService _habitService;
 	private readonly ILogService _logService;
+	private readonly IStreakService _streakService;
+	private readonly IWeeklyProgressService _weeklyProgress;
 	private readonly ILocalizationService _localization;
 	private bool _suppressFilterReload;
 
@@ -26,8 +30,18 @@ public partial class CalendarViewModel : ObservableObject
 	[ObservableProperty]
 	private bool showEmptyMessage;
 
+	[ObservableProperty]
+	private bool showInsightsPanel;
+
+	[ObservableProperty]
+	private string insightsHeadline = string.Empty;
+
+	[ObservableProperty]
+	private Color insightsAccentColor = Colors.Transparent;
+
 	public ObservableCollection<CalendarWeekRow> Weeks { get; } = [];
 	public ObservableCollection<HabitFilterOption> HabitFilterOptions { get; } = [];
+	public ObservableCollection<CalendarInsightMetricItem> InsightMetrics { get; } = [];
 
 	[ObservableProperty]
 	private string weekdayMon = string.Empty;
@@ -53,10 +67,14 @@ public partial class CalendarViewModel : ObservableObject
 	public CalendarViewModel(
 		IHabitService habitService,
 		ILogService logService,
+		IStreakService streakService,
+		IWeeklyProgressService weeklyProgress,
 		ILocalizationService localization)
 	{
 		_habitService = habitService;
 		_logService = logService;
+		_streakService = streakService;
+		_weeklyProgress = weeklyProgress;
 		_localization = localization;
 
 		var today = DateOnly.FromDateTime(DateTime.Today);
@@ -70,6 +88,7 @@ public partial class CalendarViewModel : ObservableObject
 	public string EmptyMessage => _localization.Get("NoCompletionsThisMonth");
 	public string PreviousMonthLabel => _localization.Get("PreviousMonth");
 	public string NextMonthLabel => _localization.Get("NextMonth");
+	public string InsightsSectionTitle => _localization.Get("CalendarInsightsTitle");
 
 	public string MonthTitle
 	{
@@ -123,12 +142,14 @@ public partial class CalendarViewModel : ObservableObject
 			var gridStart = CalendarMonthBuilder.StartOfWeek(DisplayedMonth);
 			var monthEnd = DisplayedMonth.AddMonths(1).AddDays(-1);
 			var gridEnd = CalendarMonthBuilder.EndOfWeek(monthEnd);
-
-			var logs = await _logService.GetCompletedLogsInRangeAsync(gridStart, gridEnd);
-			var filterId = SelectedFilter?.HabitId;
 			var today = DateOnly.FromDateTime(DateTime.Today);
+			var historyStart = today.AddDays(-StreakLookbackDays);
 
-			var grid = CalendarMonthBuilder.Build(DisplayedMonth, habits, logs, filterId, today);
+			var gridLogs = await _logService.GetCompletedLogsInRangeAsync(gridStart, gridEnd);
+			var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, today);
+			var filterId = SelectedFilter?.HabitId;
+
+			var grid = CalendarMonthBuilder.Build(DisplayedMonth, habits, gridLogs, filterId, today);
 
 			Weeks.Clear();
 			foreach (var week in grid.Weeks)
@@ -137,12 +158,56 @@ public partial class CalendarViewModel : ObservableObject
 			}
 
 			ShowEmptyMessage = !grid.HasAnyCompletions;
+			ApplyInsights(habits, historyLogs, filterId, today);
 		}
 		finally
 		{
 			IsBusy = false;
 		}
 	}
+
+	private void ApplyInsights(
+		IReadOnlyList<Models.Habit> habits,
+		IReadOnlyList<Models.HabitLog> historyLogs,
+		string? filterId,
+		DateOnly today)
+	{
+		var snapshot = CalendarInsightsBuilder.Build(
+			habits,
+			historyLogs,
+			DisplayedMonth,
+			today,
+			filterId,
+			_streakService,
+			_weeklyProgress);
+
+		ShowInsightsPanel = snapshot.ShowInsights;
+		InsightsHeadline = FormatLocalized(snapshot.HeadlineKey, snapshot.HeadlineArgs);
+		InsightsAccentColor = string.IsNullOrEmpty(snapshot.AccentColorHex)
+			? Color.FromArgb("#22C55E")
+			: Color.FromArgb(snapshot.AccentColorHex);
+
+		InsightMetrics.Clear();
+		foreach (var metric in snapshot.Metrics)
+		{
+			var value = metric.ValueKey is not null
+				? _localization.Get(metric.ValueKey)
+				: metric.Value;
+			Color? valueColor = metric.AccentColorHex is not null
+				? Color.FromArgb(metric.AccentColorHex)
+				: null;
+
+			InsightMetrics.Add(new CalendarInsightMetricItem
+			{
+				Label = _localization.Get(metric.LabelKey),
+				Value = value,
+				ValueColor = valueColor
+			});
+		}
+	}
+
+	private string FormatLocalized(string key, object[] args) =>
+		args.Length == 0 ? _localization.Get(key) : string.Format(_localization.Get(key), args);
 
 	[RelayCommand]
 	private async Task PreviousMonthAsync()
@@ -207,6 +272,15 @@ public partial class CalendarViewModel : ObservableObject
 			?? HabitFilterOptions.FirstOrDefault();
 		_suppressFilterReload = false;
 	}
+}
+
+public sealed class CalendarInsightMetricItem
+{
+	public string Label { get; init; } = string.Empty;
+
+	public string Value { get; init; } = string.Empty;
+
+	public Color? ValueColor { get; init; }
 }
 
 public sealed class HabitFilterOption(string? habitId, string name, string? colorHex)

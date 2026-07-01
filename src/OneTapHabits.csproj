@@ -13,8 +13,8 @@
 		<ApplicationTitle>OneTap Habits</ApplicationTitle>
 		<ApplicationId>com.jon2g.onetaphabits</ApplicationId>
 
-		<ApplicationDisplayVersion>1.2.5</ApplicationDisplayVersion>
-		<ApplicationVersion>10205</ApplicationVersion>
+		<ApplicationDisplayVersion>1.2.6</ApplicationDisplayVersion>
+		<ApplicationVersion>10206</ApplicationVersion>
 
 		<WindowsPackageType>None</WindowsPackageType>
 	</PropertyGroup>

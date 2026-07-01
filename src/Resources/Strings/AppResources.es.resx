@@ -356,4 +356,58 @@
   <data name="WidgetTintStrong" xml:space="preserve">
     <value>Intenso</value>
   </data>
+  <data name="CalendarInsightsTitle" xml:space="preserve">
+    <value>Tu progreso</value>
+  </data>
+  <data name="CalendarMetricCurrentStreak" xml:space="preserve">
+    <value>Racha actual</value>
+  </data>
+  <data name="CalendarMetricMonthProgress" xml:space="preserve">
+    <value>Progreso del mes</value>
+  </data>
+  <data name="CalendarMetricWeekProgress" xml:space="preserve">
+    <value>Esta semana</value>
+  </data>
+  <data name="CalendarMetricTodayStatus" xml:space="preserve">
+    <value>Hoy</value>
+  </data>
+  <data name="CalendarMetricMonthCompletions" xml:space="preserve">
+    <value>Completados del mes</value>
+  </data>
+  <data name="CalendarMetricLongestStreak" xml:space="preserve">
+    <value>Mejor racha</value>
+  </data>
+  <data name="CalendarMetricHabitsOnStreak" xml:space="preserve">
+    <value>Hábitos en racha</value>
+  </data>
+  <data name="CalendarMetricTodayOverview" xml:space="preserve">
+    <value>Hoy</value>
+  </data>
+  <data name="CalendarTodayDone" xml:space="preserve">
+    <value>Hecho</value>
+  </data>
+  <data name="CalendarTodayPartial" xml:space="preserve">
+    <value>En progreso</value>
+  </data>
+  <data name="CalendarTodayPending" xml:space="preserve">
+    <value>Sin empezar</value>
+  </data>
+  <data name="CalendarMotivationStreakMilestone" xml:space="preserve">
+    <value>¡Racha de {0} días! Estás construyendo algo real.</value>
+  </data>
+  <data name="CalendarMotivationStrongMonth" xml:space="preserve">
+    <value>Mes fuerte — {0}% de tus días programados completados.</value>
+  </data>
+  <data name="CalendarMotivationAllDoneToday" xml:space="preserve">
+    <value>Todo listo por hoy. ¡Buen trabajo!</value>
+  </data>
+  <data name="CalendarMotivationAlmostWeeklyGoal" xml:space="preserve">
+    <value>Solo {0} más esta semana para alcanzar tu meta.</value>
+  </data>
+  <data name="CalendarMotivationRestart" xml:space="preserve">
+    <value>Cada racha empieza con un toque. Tú puedes.</value>
+  </data>
+  <data name="CalendarMotivationKeepGoing" xml:space="preserve">
+    <value>Sigue apareciendo — los pequeños pasos suman.</value>
+  </data>
 </root>
