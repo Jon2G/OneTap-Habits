@@ -57,7 +57,7 @@
 	<ItemGroup>
 		<PackageReference Include="Plugin.LocalNotification" Version="11.1.4" />
 		<ProjectReference Include="OneTapHabits.Core\OneTapHabits.Core.csproj" />
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.9" />
 		<PackageReference Include="Plugin.Firebase.Auth" Version="4.0.0" />
