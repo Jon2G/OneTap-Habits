@@ -2,6 +2,7 @@ using Android.Content;
 using OneTapHabits.Models;
 using OneTapHabits.Platforms.Android.AppWidgets;
 using OneTapHabits.Services;
+using OneTapHabits.Services.Firestore;
 using Plugin.Firebase.Auth;
 using Plugin.Firebase.Firestore;
 
@@ -46,19 +47,11 @@ public static class WidgetCompletionService
 			.GetCollection($"users/{userId}/logs")
 			.GetDocument(logId);
 
-		var snapshot = await doc.GetDocumentSnapshotAsync<LogDto>();
-		var current = snapshot.Data?.Count > 0
-			? snapshot.Data.Count
-			: snapshot.Data?.IsCompleted == true ? 1 : 0;
+		var snapshot = await doc.GetDocumentSnapshotAsync<LogFirestoreDto>();
+		var current = snapshot.Data?.ResolveCount() ?? 0;
 		var next = current + 1;
 
-		await doc.SetDataAsync(new LogDto
-		{
-			HabitId = habitId,
-			Date = today.ToString("O"),
-			IsCompleted = true,
-			Count = next
-		});
+		await doc.SetDataAsync(LogFirestoreDto.FromEntry(habitId, today, next));
 
 		return next;
 	}
@@ -84,36 +77,13 @@ public static class WidgetCompletionService
 		var habitSnapshot = await CrossFirebaseFirestore.Current
 			.GetCollection($"users/{userId}/habits")
 			.GetDocument(habitId)
-			.GetDocumentSnapshotAsync<HabitDto>();
+			.GetDocumentSnapshotAsync<HabitFirestoreDto>();
 
-		if (habitSnapshot.Data is null)
+		if (habitSnapshot.Data is null || !habitSnapshot.Data.IsValidCloudDocument())
 		{
 			return 1;
 		}
 
 		return HabitDailyTargetHelper.GetDailyTarget(habitSnapshot.Data.ToModel(habitId));
-	}
-
-	private sealed class LogDto
-	{
-		public string HabitId { get; set; } = string.Empty;
-		public string Date { get; set; } = string.Empty;
-		public bool IsCompleted { get; set; }
-		public int Count { get; set; } = 1;
-	}
-
-	private sealed class HabitDto
-	{
-		public int ScheduleMode { get; set; }
-		public int TimesPerDay { get; set; } = 1;
-
-		public Habit ToModel(string id) => new()
-		{
-			Id = id,
-			ScheduleMode = Enum.IsDefined(typeof(HabitScheduleMode), ScheduleMode)
-				? (HabitScheduleMode)ScheduleMode
-				: HabitScheduleMode.SpecificDays,
-			TimesPerDay = TimesPerDay < 1 ? 1 : TimesPerDay
-		};
 	}
 }

@@ -1,4 +1,5 @@
 using OneTapHabits.Models;
+using OneTapHabits.Services.Firestore;
 using Plugin.Firebase.Auth;
 using Plugin.Firebase.Firestore;
 
@@ -43,9 +44,9 @@ public sealed class HabitService : IHabitService
 			return OrderHabits(habits);
 		}
 
-		var snapshot = await CloudHabitsCollection().GetDocumentsAsync<HabitDto>();
+		var snapshot = await CloudHabitsCollection().GetDocumentsAsync<HabitFirestoreDto>();
 		var cloudHabits = snapshot.Documents
-			.Where(d => d.Data is not null && d.Data.IsActive)
+			.Where(d => d.Data is not null && d.Data.IsActive && d.Data.IsValidCloudDocument())
 			.Select(d => d.Data!.ToModel(d.Reference.Id))
 			.ToList();
 
@@ -53,7 +54,7 @@ public sealed class HabitService : IHabitService
 		{
 			foreach (var habit in cloudHabits)
 			{
-				await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitDto.FromModel(habit));
+				await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitFirestoreDto.FromModel(habit));
 			}
 		}
 
@@ -68,8 +69,8 @@ public sealed class HabitService : IHabitService
 			return guest.Habits.FirstOrDefault(h => h.Id == habitId);
 		}
 
-		var snapshot = await CloudHabitsCollection().GetDocument(habitId).GetDocumentSnapshotAsync<HabitDto>();
-		if (snapshot.Data is null)
+		var snapshot = await CloudHabitsCollection().GetDocument(habitId).GetDocumentSnapshotAsync<HabitFirestoreDto>();
+		if (snapshot.Data is null || !snapshot.Data.IsValidCloudDocument())
 		{
 			return null;
 		}
@@ -101,7 +102,7 @@ public sealed class HabitService : IHabitService
 		}
 		else
 		{
-			await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitDto.FromModel(habit));
+			await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitFirestoreDto.FromModel(habit));
 		}
 	}
 
@@ -140,7 +141,7 @@ public sealed class HabitService : IHabitService
 		ApplyReorder(habits, orderedHabitIds);
 		foreach (var habit in habits)
 		{
-			await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitDto.FromModel(habit));
+			await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitFirestoreDto.FromModel(habit));
 		}
 	}
 
@@ -165,59 +166,5 @@ public sealed class HabitService : IHabitService
 			?? throw new InvalidOperationException("User must be signed in.");
 
 		return _firestore.GetCollection($"users/{userId}/habits");
-	}
-
-	internal sealed class HabitDto
-	{
-		public string Name { get; set; } = string.Empty;
-		public string ColorHex { get; set; } = "#4CAF50";
-		public bool ShowInWidget { get; set; } = true;
-		public List<int> TargetDays { get; set; } = [];
-		public int ScheduleMode { get; set; }
-		public int TimesPerWeek { get; set; } = 1;
-		public int TimesPerDay { get; set; } = 1;
-		public int SortOrder { get; set; }
-		public bool ReminderEnabled { get; set; }
-		public string? ReminderTime { get; set; }
-		public string CreatedAt { get; set; } = string.Empty;
-		public bool IsActive { get; set; } = true;
-
-		public static HabitDto FromModel(Habit habit) => new()
-		{
-			Name = habit.Name,
-			ColorHex = habit.ColorHex,
-			ShowInWidget = habit.ShowInWidget,
-			TargetDays = habit.TargetDays.ToList(),
-			ScheduleMode = (int)habit.ScheduleMode,
-			TimesPerWeek = habit.TimesPerWeek,
-			TimesPerDay = habit.TimesPerDay,
-			SortOrder = habit.SortOrder,
-			ReminderEnabled = habit.ReminderEnabled,
-			ReminderTime = habit.ReminderTime?.ToString("HH:mm"),
-			CreatedAt = habit.CreatedAt.ToString("O"),
-			IsActive = habit.IsActive
-		};
-
-		public Habit ToModel(string id) => new()
-		{
-			Id = id,
-			Name = Name,
-			ColorHex = ColorHex,
-			ShowInWidget = ShowInWidget,
-			TargetDays = TargetDays,
-			ScheduleMode = Enum.IsDefined(typeof(HabitScheduleMode), ScheduleMode)
-				? (HabitScheduleMode)ScheduleMode
-				: HabitScheduleMode.SpecificDays,
-			TimesPerWeek = TimesPerWeek < 1 ? 1 : TimesPerWeek,
-			TimesPerDay = TimesPerDay < 1 ? 1 : TimesPerDay,
-			SortOrder = SortOrder,
-			ReminderEnabled = ReminderEnabled,
-			ReminderTime = TimeOnly.TryParse(ReminderTime, out var time) ? time : null,
-			CreatedAt = ParseCreatedAt(CreatedAt),
-			IsActive = IsActive
-		};
-
-		private static DateTimeOffset ParseCreatedAt(string? value) =>
-			DateTimeOffset.TryParse(value, out var parsed) ? parsed : DateTimeOffset.UtcNow;
 	}
 }

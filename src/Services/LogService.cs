@@ -1,5 +1,7 @@
 using OneTapHabits.Calendar;
+using OneTapHabits.Firestore;
 using OneTapHabits.Models;
+using OneTapHabits.Services.Firestore;
 using Plugin.Firebase.Auth;
 using Plugin.Firebase.Firestore;
 
@@ -40,8 +42,8 @@ public sealed class LogService : ILogService
 		}
 
 		var id = HabitLog.CreateId(date, habitId);
-		var snapshot = await CloudLogsCollection().GetDocument(id).GetDocumentSnapshotAsync<LogDto>();
-		if (snapshot.Data is null)
+		var snapshot = await CloudLogsCollection().GetDocument(id).GetDocumentSnapshotAsync<LogFirestoreDto>();
+		if (snapshot.Data is null || snapshot.Data.ResolveCount() <= 0)
 		{
 			return null;
 		}
@@ -93,13 +95,18 @@ public sealed class LogService : ILogService
 		}
 
 		var prefix = date.ToString("yyyy-MM-dd");
-		var snapshot = await CloudLogsCollection().GetDocumentsAsync<LogDto>();
+		var snapshot = await CloudLogsCollection().GetDocumentsAsync<Dictionary<string, object>>();
 		return snapshot.Documents
 			.Where(d => d.Data is not null && d.Reference.Id.StartsWith(prefix, StringComparison.Ordinal))
-			.Select(d => new
+			.Where(d => !CloudDocumentSanitizer.ShouldDeleteLogDocument(d.Reference.Id, d.Data))
+			.Select(d =>
 			{
-				HabitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, d.Data!.HabitId),
-				Count = ResolveCount(d.Data!)
+				var dto = MapLogDto(d.Data!);
+				return new
+				{
+					HabitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, dto.HabitId),
+					Count = dto.ResolveCount()
+				};
 			})
 			.Where(x => !string.IsNullOrEmpty(x.HabitId) && x.Count > 0)
 			.GroupBy(x => x.HabitId)
@@ -121,10 +128,10 @@ public sealed class LogService : ILogService
 			return GuestLogQuery.FilterCompletedInRange(guest, startInclusive, endInclusive);
 		}
 
-		var snapshot = await CloudLogsCollection().GetDocumentsAsync<LogDto>();
+		var snapshot = await CloudLogsCollection().GetDocumentsAsync<Dictionary<string, object>>();
 		return snapshot.Documents
-			.Where(d => d.Data is not null && (d.Data!.IsCompleted || d.Data.Count > 0))
-			.Select(d => ToLogFromSnapshot(d.Reference.Id, d.Data!))
+			.Where(d => d.Data is not null && !CloudDocumentSanitizer.ShouldDeleteLogDocument(d.Reference.Id, d.Data))
+			.Select(d => ToLogFromSnapshot(d.Reference.Id, MapLogDto(d.Data!)))
 			.Where(l => l is not null && l.Date >= startInclusive && l.Date <= endInclusive)
 			.Cast<HabitLog>()
 			.ToList();
@@ -159,15 +166,9 @@ public sealed class LogService : ILogService
 			return;
 		}
 
-		var dto = new LogDto
-		{
-			HabitId = habitId,
-			Date = date.ToString("O"),
-			IsCompleted = true,
-			Count = count
-		};
-
-		await CloudLogsCollection().GetDocument(id).SetDataAsync(dto);
+		await CloudLogsCollection()
+			.GetDocument(id)
+			.SetDataAsync(LogFirestoreDto.FromEntry(habitId, date, count));
 	}
 
 	private static HabitLog ToLog(string habitId, DateOnly date, bool isCompleted, int count) => new()
@@ -179,12 +180,16 @@ public sealed class LogService : ILogService
 		Count = count
 	};
 
-	private static int ResolveCount(LogDto dto) => dto.Count > 0 ? dto.Count : dto.IsCompleted ? 1 : 0;
-
-	private static HabitLog? ToLogFromSnapshot(string id, LogDto dto)
+	private static HabitLog? ToLogFromSnapshot(string id, LogFirestoreDto dto)
 	{
 		var habitId = HabitLogDocumentId.ResolveHabitId(id, dto.HabitId);
 		if (string.IsNullOrEmpty(habitId))
+		{
+			return null;
+		}
+
+		var count = dto.ResolveCount();
+		if (count <= 0)
 		{
 			return null;
 		}
@@ -202,32 +207,41 @@ public sealed class LogService : ILogService
 		return null;
 	}
 
+	private static LogFirestoreDto MapLogDto(IReadOnlyDictionary<string, object> data) => new()
+	{
+		HabitId = GetString(data, CloudDocumentSanitizer.LogHabitIdField),
+		Date = GetString(data, "date"),
+		IsCompleted = GetBool(data, CloudDocumentSanitizer.LogIsCompletedField),
+		Count = GetInt(data, CloudDocumentSanitizer.LogCountField)
+	};
+
+	private static string GetString(IReadOnlyDictionary<string, object> data, string key) =>
+		data.TryGetValue(key, out var value) && value is not null ? value.ToString() ?? string.Empty : string.Empty;
+
+	private static bool GetBool(IReadOnlyDictionary<string, object> data, string key) =>
+		data.TryGetValue(key, out var value) && value is bool b && b;
+
+	private static int GetInt(IReadOnlyDictionary<string, object> data, string key)
+	{
+		if (!data.TryGetValue(key, out var value) || value is null)
+		{
+			return 0;
+		}
+
+		return value switch
+		{
+			int i => i,
+			long l => (int)l,
+			double d => (int)d,
+			_ => int.TryParse(value.ToString(), out var parsed) ? parsed : 0
+		};
+	}
+
 	private ICollectionReference CloudLogsCollection()
 	{
 		var userId = _firebaseAuth.CurrentUser?.Uid
 			?? throw new InvalidOperationException("User must be signed in.");
 
 		return _firestore.GetCollection($"users/{userId}/logs");
-	}
-
-	internal sealed class LogDto
-	{
-		public string HabitId { get; set; } = string.Empty;
-		public string Date { get; set; } = string.Empty;
-		public bool IsCompleted { get; set; }
-		public int Count { get; set; } = 1;
-
-		public HabitLog ToModel(string id, string habitId, DateOnly date)
-		{
-			var count = Count > 0 ? Count : IsCompleted ? 1 : 0;
-			return new HabitLog
-			{
-				Id = id,
-				HabitId = habitId,
-				Date = date,
-				IsCompleted = count > 0,
-				Count = count
-			};
-		}
 	}
 }

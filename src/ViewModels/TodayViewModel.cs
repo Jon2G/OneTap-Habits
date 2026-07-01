@@ -187,6 +187,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 				primaryLabel,
 				secondaryLabel,
 				IncrementHabitCommand,
+				UndoHabitCommand,
 				EditHabitCommand,
 				DeleteHabitCommand,
 				editLabel,
@@ -232,6 +233,18 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 		}
 
 		await _logService.IncrementCountAsync(item.Habit.Id, SelectedDate);
+		await LoadAsync();
+	}
+
+	[RelayCommand]
+	private async Task UndoHabitAsync(TodayHabitItem item)
+	{
+		if (item.TodayCount <= 0)
+		{
+			return;
+		}
+
+		await _logService.SetCompletedAsync(item.Habit.Id, SelectedDate, false);
 		await LoadAsync();
 	}
 
@@ -296,6 +309,7 @@ public sealed class TodayHabitItem(
 	string streakLabel,
 	string completedLabel,
 	ICommand incrementCommand,
+	ICommand undoCommand,
 	ICommand editCommand,
 	ICommand deleteCommand,
 	string editLabel,
@@ -308,6 +322,7 @@ public sealed class TodayHabitItem(
 	public string StreakLabel { get; } = streakLabel;
 	public string CompletedLabel { get; } = completedLabel;
 	public ICommand IncrementCommand { get; } = incrementCommand;
+	public ICommand UndoCommand { get; } = undoCommand;
 	public ICommand EditCommand { get; } = editCommand;
 	public ICommand DeleteCommand { get; } = deleteCommand;
 	public string EditLabel { get; } = editLabel;

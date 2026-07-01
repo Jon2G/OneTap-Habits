@@ -109,6 +109,9 @@
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding IncrementCommand}"
                                                           CommandParameter="{Binding .}" />
+                                    <TapGestureRecognizer Command="{Binding UndoCommand}"
+                                                          CommandParameter="{Binding .}"
+                                                          NumberOfTapsRequired="2" />
                                 </Border.GestureRecognizers>
                                 <Grid ColumnDefinitions="4,*" ColumnSpacing="12">
                                     <BoxView Grid.Column="0" Color="{Binding AccentColor}" CornerRadius="2" />

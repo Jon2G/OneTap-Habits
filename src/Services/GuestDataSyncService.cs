@@ -1,4 +1,6 @@
+using OneTapHabits.Firestore;
 using OneTapHabits.Models;
+using OneTapHabits.Services.Firestore;
 using Plugin.Firebase.Auth;
 using Plugin.Firebase.Firestore;
 
@@ -27,6 +29,17 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 	{
 		var userId = _auth.CurrentUser?.Uid
 			?? throw new InvalidOperationException("Must be signed in to evaluate sign-in conflict.");
+
+		var (habitsDeleted, logsDeleted) = await FirestoreCloudRepair.SanitizeCorruptDocumentsAsync(
+			HabitsCollection(userId),
+			LogsCollection(userId),
+			cancellationToken);
+		if (habitsDeleted > 0 || logsDeleted > 0)
+		{
+			_diagnosticLog.LogInfo(
+				"SignInSync",
+				$"Sanitized corrupt cloud docs user={MaskUserId(userId)} habitsDeleted={habitsDeleted} logsDeleted={logsDeleted}");
+		}
 
 		var guest = await _guestStore.LoadAsync(cancellationToken);
 		var sampleIds = SignInGuestDataHelper.ParseSampleHabitIds(
@@ -68,9 +81,18 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 				_diagnosticLog.LogInfo(
 					"SignInSync",
 					$"UseThisDevice: uploading guest habits={guest.Habits.Count(h => h.IsActive)} logs={guest.Logs.Count}.");
-				await ReplaceCloudWithGuestAsync(userId, guest, cancellationToken);
-				await _guestStore.ClearAsync(cancellationToken);
-				_diagnosticLog.LogInfo("SignInSync", "UseThisDevice: upload complete, guest cleared.");
+				try
+				{
+					await ReplaceCloudWithGuestAsync(userId, guest, cancellationToken);
+					await _guestStore.ClearAsync(cancellationToken);
+					_diagnosticLog.LogInfo("SignInSync", "UseThisDevice: upload complete, guest cleared.");
+				}
+				catch (Exception ex)
+				{
+					_diagnosticLog.LogError("SignInSync", ex, "UseThisDevice upload failed; guest data preserved.");
+					throw;
+				}
+
 				break;
 
 			default:
@@ -112,7 +134,7 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		ICollectionReference collection,
 		CancellationToken cancellationToken)
 	{
-		var snapshot = await collection.GetDocumentsAsync<DeleteMarkerDto>();
+		var snapshot = await collection.GetDocumentsAsync<Dictionary<string, object>>();
 		foreach (var document in snapshot.Documents)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
@@ -123,9 +145,9 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 	private async Task<IReadOnlyList<Habit>> FetchCloudHabitsAsync(string userId, CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
-		var habitsSnapshot = await HabitsCollection(userId).GetDocumentsAsync<HabitDto>();
+		var habitsSnapshot = await HabitsCollection(userId).GetDocumentsAsync<HabitFirestoreDto>();
 		return habitsSnapshot.Documents
-			.Where(d => d.Data is not null && d.Data.IsActive)
+			.Where(d => d.Data is not null && d.Data.IsActive && d.Data.IsValidCloudDocument())
 			.Select(d => d.Data!.ToModel(d.Reference.Id))
 			.ToList();
 	}
@@ -133,28 +155,59 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 	private async Task<IReadOnlyList<GuestLogEntry>> FetchCloudLogsAsync(string userId, CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
-		var logsSnapshot = await LogsCollection(userId).GetDocumentsAsync<LogDto>();
+		var logsSnapshot = await LogsCollection(userId).GetDocumentsAsync<Dictionary<string, object>>();
 		return logsSnapshot.Documents
-			.Where(d => d.Data is not null && (d.Data!.IsCompleted || d.Data.Count > 0))
+			.Where(d => d.Data is not null && !CloudDocumentSanitizer.ShouldDeleteLogDocument(d.Reference.Id, d.Data))
 			.Select(d =>
 			{
-				var habitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, d.Data!.HabitId);
+				var dto = MapLogDto(d.Data!);
+				var habitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, dto.HabitId);
 				var date = HabitLogDocumentId.TryParse(d.Reference.Id, out var fromId, out _)
 					? fromId
-					: DateOnly.TryParse(d.Data.Date, out var parsed)
+					: DateOnly.TryParse(dto.Date, out var parsed)
 						? parsed
 						: DateOnly.FromDateTime(DateTime.Today);
-				var count = d.Data.Count > 0 ? d.Data.Count : 1;
+				var count = dto.ResolveCount();
 				return new GuestLogEntry
 				{
 					HabitId = habitId,
 					Date = date.ToString("yyyy-MM-dd"),
-					IsCompleted = true,
+					IsCompleted = count > 0,
 					Count = count
 				};
 			})
-			.Where(e => !string.IsNullOrEmpty(e.HabitId))
+			.Where(e => !string.IsNullOrEmpty(e.HabitId) && e.Count > 0)
 			.ToList();
+	}
+
+	private static LogFirestoreDto MapLogDto(IReadOnlyDictionary<string, object> data) => new()
+	{
+		HabitId = GetString(data, CloudDocumentSanitizer.LogHabitIdField),
+		Date = GetString(data, "date"),
+		IsCompleted = GetBool(data, CloudDocumentSanitizer.LogIsCompletedField),
+		Count = GetInt(data, CloudDocumentSanitizer.LogCountField)
+	};
+
+	private static string GetString(IReadOnlyDictionary<string, object> data, string key) =>
+		data.TryGetValue(key, out var value) && value is not null ? value.ToString() ?? string.Empty : string.Empty;
+
+	private static bool GetBool(IReadOnlyDictionary<string, object> data, string key) =>
+		data.TryGetValue(key, out var value) && value is bool b && b;
+
+	private static int GetInt(IReadOnlyDictionary<string, object> data, string key)
+	{
+		if (!data.TryGetValue(key, out var value) || value is null)
+		{
+			return 0;
+		}
+
+		return value switch
+		{
+			int i => i,
+			long l => (int)l,
+			double d => (int)d,
+			_ => int.TryParse(value.ToString(), out var parsed) ? parsed : 0
+		};
 	}
 
 	private async Task UploadHabitsAsync(
@@ -165,7 +218,9 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		foreach (var habit in habits)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			await HabitsCollection(userId).GetDocument(habit.Id).SetDataAsync(HabitDto.FromModel(habit));
+			await HabitsCollection(userId)
+				.GetDocument(habit.Id)
+				.SetDataAsync(HabitFirestoreDto.FromModel(habit));
 		}
 	}
 
@@ -184,13 +239,9 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 
 			var logId = HabitLog.CreateId(date, log.HabitId);
 			var count = log.Count > 0 ? log.Count : 1;
-			await LogsCollection(userId).GetDocument(logId).SetDataAsync(new LogDto
-			{
-				HabitId = log.HabitId,
-				Date = date.ToString("O"),
-				IsCompleted = true,
-				Count = count
-			});
+			await LogsCollection(userId)
+				.GetDocument(logId)
+				.SetDataAsync(LogFirestoreDto.FromEntry(log.HabitId, date, count));
 		}
 	}
 
@@ -202,65 +253,4 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 
 	private static string MaskUserId(string userId) =>
 		userId.Length <= 8 ? $"{userId}..." : $"{userId[..8]}...";
-
-	private sealed class DeleteMarkerDto;
-
-	private sealed class HabitDto
-	{
-		public string Name { get; set; } = string.Empty;
-		public string ColorHex { get; set; } = "#4CAF50";
-		public bool ShowInWidget { get; set; } = true;
-		public List<int> TargetDays { get; set; } = [];
-		public int ScheduleMode { get; set; }
-		public int TimesPerWeek { get; set; } = 1;
-		public int TimesPerDay { get; set; } = 1;
-		public int SortOrder { get; set; }
-		public bool ReminderEnabled { get; set; }
-		public string? ReminderTime { get; set; }
-		public string CreatedAt { get; set; } = string.Empty;
-		public bool IsActive { get; set; } = true;
-
-		public static HabitDto FromModel(Habit habit) => new()
-		{
-			Name = habit.Name,
-			ColorHex = habit.ColorHex,
-			ShowInWidget = habit.ShowInWidget,
-			TargetDays = habit.TargetDays.ToList(),
-			ScheduleMode = (int)habit.ScheduleMode,
-			TimesPerWeek = habit.TimesPerWeek,
-			TimesPerDay = habit.TimesPerDay,
-			SortOrder = habit.SortOrder,
-			ReminderEnabled = habit.ReminderEnabled,
-			ReminderTime = habit.ReminderTime?.ToString("HH:mm"),
-			CreatedAt = habit.CreatedAt.ToString("O"),
-			IsActive = habit.IsActive
-		};
-
-		public Habit ToModel(string id) => new()
-		{
-			Id = id,
-			Name = Name,
-			ColorHex = ColorHex,
-			ShowInWidget = ShowInWidget,
-			TargetDays = TargetDays,
-			ScheduleMode = Enum.IsDefined(typeof(HabitScheduleMode), ScheduleMode)
-				? (HabitScheduleMode)ScheduleMode
-				: HabitScheduleMode.SpecificDays,
-			TimesPerWeek = TimesPerWeek < 1 ? 1 : TimesPerWeek,
-			TimesPerDay = TimesPerDay < 1 ? 1 : TimesPerDay,
-			SortOrder = SortOrder,
-			ReminderEnabled = ReminderEnabled,
-			ReminderTime = TimeOnly.TryParse(ReminderTime, out var time) ? time : null,
-			CreatedAt = DateTimeOffset.TryParse(CreatedAt, out var parsed) ? parsed : DateTimeOffset.UtcNow,
-			IsActive = IsActive
-		};
-	}
-
-	private sealed class LogDto
-	{
-		public string HabitId { get; set; } = string.Empty;
-		public string Date { get; set; } = string.Empty;
-		public bool IsCompleted { get; set; }
-		public int Count { get; set; } = 1;
-	}
 }

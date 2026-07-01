@@ -80,7 +80,7 @@
     <value>Edit habit</value>
   </data>
   <data name="HabitSwipeHint" xml:space="preserve">
-    <value>Tap to complete, swipe left for edit or delete</value>
+    <value>Tap to complete, double-tap to undo, swipe left for edit or delete</value>
   </data>
   <data name="DeleteHabit" xml:space="preserve">
     <value>Delete</value>
@@ -234,7 +234,7 @@
     <value>Completed</value>
   </data>
   <data name="TapToComplete" xml:space="preserve">
-    <value>Tap to complete</value>
+    <value>Tap to complete · double-tap to undo</value>
   </data>
   <data name="DailyProgressFormat" xml:space="preserve">
     <value>{0}/{1} today</value>
