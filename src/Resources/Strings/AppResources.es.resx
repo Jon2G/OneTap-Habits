@@ -308,6 +308,12 @@
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Buscar actualizaciones</value>
   </data>
+  <data name="ExportDiagnosticLogs" xml:space="preserve">
+    <value>Exportar registros de diagnóstico</value>
+  </data>
+  <data name="ExportDiagnosticLogsFailed" xml:space="preserve">
+    <value>No se pudieron exportar los registros de diagnóstico.</value>
+  </data>
   <data name="UpdateAvailableTitle" xml:space="preserve">
     <value>Actualización disponible</value>
   </data>

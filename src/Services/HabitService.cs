@@ -179,7 +179,7 @@ public sealed class HabitService : IHabitService
 		public int SortOrder { get; set; }
 		public bool ReminderEnabled { get; set; }
 		public string? ReminderTime { get; set; }
-		public DateTimeOffset CreatedAt { get; set; }
+		public string CreatedAt { get; set; } = string.Empty;
 		public bool IsActive { get; set; } = true;
 
 		public static HabitDto FromModel(Habit habit) => new()
@@ -194,7 +194,7 @@ public sealed class HabitService : IHabitService
 			SortOrder = habit.SortOrder,
 			ReminderEnabled = habit.ReminderEnabled,
 			ReminderTime = habit.ReminderTime?.ToString("HH:mm"),
-			CreatedAt = habit.CreatedAt,
+			CreatedAt = habit.CreatedAt.ToString("O"),
 			IsActive = habit.IsActive
 		};
 
@@ -212,12 +212,12 @@ public sealed class HabitService : IHabitService
 			TimesPerDay = TimesPerDay < 1 ? 1 : TimesPerDay,
 			SortOrder = SortOrder,
 			ReminderEnabled = ReminderEnabled,
-			ReminderTime = ParseReminderTime(ReminderTime),
-			CreatedAt = CreatedAt,
+			ReminderTime = TimeOnly.TryParse(ReminderTime, out var time) ? time : null,
+			CreatedAt = ParseCreatedAt(CreatedAt),
 			IsActive = IsActive
 		};
 
-		private static TimeOnly? ParseReminderTime(string? value) =>
-			TimeOnly.TryParse(value, out var time) ? time : null;
+		private static DateTimeOffset ParseCreatedAt(string? value) =>
+			DateTimeOffset.TryParse(value, out var parsed) ? parsed : DateTimeOffset.UtcNow;
 	}
 }

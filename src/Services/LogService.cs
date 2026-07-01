@@ -96,9 +96,14 @@ public sealed class LogService : ILogService
 		var snapshot = await CloudLogsCollection().GetDocumentsAsync<LogDto>();
 		return snapshot.Documents
 			.Where(d => d.Data is not null && d.Reference.Id.StartsWith(prefix, StringComparison.Ordinal))
-			.Select(d => d.Data!)
-			.Where(d => ResolveCount(d) > 0)
-			.ToDictionary(d => d.HabitId, ResolveCount);
+			.Select(d => new
+			{
+				HabitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, d.Data!.HabitId),
+				Count = ResolveCount(d.Data!)
+			})
+			.Where(x => !string.IsNullOrEmpty(x.HabitId) && x.Count > 0)
+			.GroupBy(x => x.HabitId)
+			.ToDictionary(g => g.Key, g => g.Max(x => x.Count));
 	}
 
 	public async Task<IReadOnlyList<HabitLog>> GetCompletedLogsInRangeAsync(
@@ -178,29 +183,23 @@ public sealed class LogService : ILogService
 
 	private static HabitLog? ToLogFromSnapshot(string id, LogDto dto)
 	{
-		if (TryParseDateFromLogId(id, out var dateFromId))
+		var habitId = HabitLogDocumentId.ResolveHabitId(id, dto.HabitId);
+		if (string.IsNullOrEmpty(habitId))
 		{
-			return dto.ToModel(id, dto.HabitId, dateFromId);
+			return null;
+		}
+
+		if (HabitLogDocumentId.TryParse(id, out var dateFromId, out _))
+		{
+			return dto.ToModel(id, habitId, dateFromId);
 		}
 
 		if (DateOnly.TryParse(dto.Date, out var parsedDate))
 		{
-			return dto.ToModel(id, dto.HabitId, parsedDate);
+			return dto.ToModel(id, habitId, parsedDate);
 		}
 
 		return null;
-	}
-
-	private static bool TryParseDateFromLogId(string id, out DateOnly date)
-	{
-		var separator = id.IndexOf('_', StringComparison.Ordinal);
-		if (separator <= 0)
-		{
-			date = default;
-			return false;
-		}
-
-		return DateOnly.TryParseExact(id[..separator], "yyyy-MM-dd", out date);
 	}
 
 	private ICollectionReference CloudLogsCollection()

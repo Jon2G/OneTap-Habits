@@ -16,6 +16,7 @@ public partial class SettingsPage : ContentPage
 		if (BindingContext is SettingsViewModel viewModel)
 		{
 			viewModel.Navigation = Navigation;
+			viewModel.HostPage = this;
 			viewModel.RefreshChoices();
 			viewModel.RefreshAccountState();
 		}

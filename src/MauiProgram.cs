@@ -33,6 +33,8 @@ public static class MauiProgram
 			})
 			.RegisterFirebaseServices();
 
+		builder.Services.AddSingleton<DiagnosticLogBuffer>();
+		builder.Services.AddSingleton<IDiagnosticLogService, DiagnosticLogService>();
 		builder.Services.AddSingleton<IAuthService, AuthService>();
 		builder.Services.AddSingleton<ILocalGuestStore, LocalGuestStore>();
 		builder.Services.AddSingleton<IGuestDataSyncService, GuestDataSyncService>();

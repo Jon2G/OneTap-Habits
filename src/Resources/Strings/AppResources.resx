@@ -308,6 +308,12 @@
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Check for updates</value>
   </data>
+  <data name="ExportDiagnosticLogs" xml:space="preserve">
+    <value>Export diagnostic logs</value>
+  </data>
+  <data name="ExportDiagnosticLogsFailed" xml:space="preserve">
+    <value>Could not export diagnostic logs.</value>
+  </data>
   <data name="UpdateAvailableTitle" xml:space="preserve">
     <value>Update available</value>
   </data>

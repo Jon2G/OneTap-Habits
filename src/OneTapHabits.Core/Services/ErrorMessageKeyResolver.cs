@@ -90,9 +90,20 @@ public static class ErrorMessageKeyResolver
 			    "google sign-in is not configured",
 			    "enable google in firebase",
 			    "sha-1 fingerprints",
-			    "default_web_client_id"))
+			    "default_web_client_id",
+			    "package certificate hash",
+			    "certificate hash"))
 		{
 			return GoogleNotConfigured;
+		}
+
+		if (ContainsAny(text,
+			    "permission_denied",
+			    "missing or insufficient permissions",
+			    "firestore",
+			    "cloud firestore"))
+		{
+			return Network;
 		}
 
 		return Unknown;

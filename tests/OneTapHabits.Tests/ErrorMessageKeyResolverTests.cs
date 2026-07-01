@@ -29,6 +29,15 @@ public class ErrorMessageKeyResolverTests
 	}
 
 	[Fact]
+	public void Resolve_MapsPackageCertificateHashError()
+	{
+		var key = ErrorMessageKeyResolver.Resolve(
+			new Exception("There was an error while trying to get your package certificate hash."));
+
+		Assert.Equal(ErrorMessageKeyResolver.GoogleNotConfigured, key);
+	}
+
+	[Fact]
 	public void Resolve_UsesUnknownForUnrecognizedError()
 	{
 		var key = ErrorMessageKeyResolver.Resolve(new Exception("Some obscure internal failure"));

@@ -18,6 +18,7 @@ public partial class SettingsViewModel : ObservableObject
 	private readonly IThemeService _themeService;
 	private readonly IWidgetAppearanceService _widgetAppearance;
 	private readonly UpdateCoordinator _updateCoordinator;
+	private readonly IDiagnosticLogService _diagnosticLog;
 
 	[ObservableProperty]
 	private string? accountMessage;
@@ -34,7 +35,8 @@ public partial class SettingsViewModel : ObservableObject
 		IWidgetRefreshService widgetRefresh,
 		IThemeService themeService,
 		IWidgetAppearanceService widgetAppearance,
-		UpdateCoordinator updateCoordinator)
+		UpdateCoordinator updateCoordinator,
+		IDiagnosticLogService diagnosticLog)
 	{
 		_authService = authService;
 		_localization = localization;
@@ -42,9 +44,12 @@ public partial class SettingsViewModel : ObservableObject
 		_themeService = themeService;
 		_widgetAppearance = widgetAppearance;
 		_updateCoordinator = updateCoordinator;
+		_diagnosticLog = diagnosticLog;
 	}
 
 	public INavigation? Navigation { get; set; }
+
+	public Page? HostPage { get; set; }
 
 	public string Title => _localization.Get("Settings");
 	public string AccountSectionTitle => _localization.Get("AccountSection");
@@ -65,6 +70,7 @@ public partial class SettingsViewModel : ObservableObject
 	public string ViewSourceLabel => _localization.Get("ViewSourceOnGitHub");
 	public string LicenseLabel => _localization.Get("MitLicense");
 	public string CheckForUpdatesLabel => _localization.Get("CheckForUpdates");
+	public string ExportDiagnosticLogsLabel => _localization.Get("ExportDiagnosticLogs");
 	public bool IsCheckForUpdatesSupported => DeviceInfo.Platform == DevicePlatform.Android;
 	public string WidgetSectionTitle => _localization.Get("WidgetSection");
 	public string WidgetTintLabel => _localization.Get("WidgetTintLabel");
@@ -151,21 +157,42 @@ public partial class SettingsViewModel : ObservableObject
 			AccountErrorMessage = null;
 			AccountMessage = null;
 			IsGoogleSignInBusy = true;
+			_diagnosticLog.LogInfo("GoogleSignIn", "Starting Google sign-in flow.");
 
 			var conflict = await _authService.SignInWithGoogleAsync();
+			_diagnosticLog.LogInfo(
+				"GoogleSignIn",
+				$"Firebase auth OK. NeedsUserChoice={conflict.NeedsUserChoice}, Auto={conflict.AutoResolution}, LocalHabits={conflict.LocalHabitCount}, CloudHabits={conflict.CloudHabitCount}");
+
 			var resolution = await ResolveSignInConflictAsync(conflict);
+			_diagnosticLog.LogInfo("GoogleSignIn", $"Applying resolution: {resolution}");
+
 			await _authService.CompleteSignInAsync(resolution);
-			await _widgetRefresh.RefreshAsync();
-			AccountMessage = _localization.Get("SyncSuccess");
+			_diagnosticLog.LogInfo("GoogleSignIn", "Sign-in resolution applied.");
 			NotifyAccountPropertiesChanged();
 			WeakReferenceMessenger.Default.Send(new AuthChangedMessage());
+
+			try
+			{
+				await _widgetRefresh.RefreshAsync();
+				_diagnosticLog.LogInfo("GoogleSignIn", "Widget refresh completed.");
+			}
+			catch (Exception widgetEx)
+			{
+				_diagnosticLog.LogError("GoogleSignIn", widgetEx, "Widget refresh failed after sign-in.");
+			}
+
+			AccountMessage = _localization.Get("SyncSuccess");
+			_diagnosticLog.LogInfo("GoogleSignIn", "Sign-in flow completed successfully.");
 		}
 		catch (OperationCanceledException)
 		{
+			_diagnosticLog.LogWarning("GoogleSignIn", "Sign-in canceled by user.");
 			await _authService.AbortSignInAsync();
 		}
 		catch (Exception ex)
 		{
+			_diagnosticLog.LogError("GoogleSignIn", ex, "Sign-in flow failed.");
 			await _authService.AbortSignInAsync();
 			AccountErrorMessage = UserFriendlyErrorMapper.FromException(ex, _localization);
 		}
@@ -183,23 +210,41 @@ public partial class SettingsViewModel : ObservableObject
 				?? throw new InvalidOperationException("Sign-in conflict missing auto resolution.");
 		}
 
-		var page = Shell.Current?.CurrentPage
-			?? throw new InvalidOperationException("No page available for sign-in conflict dialog.");
+		return await MainThread.InvokeOnMainThreadAsync(async () =>
+		{
+			var page = ResolveDialogPage()
+				?? throw new InvalidOperationException("No page available for sign-in conflict dialog.");
 
-		var message = string.Format(
-			_localization.Get("SignInConflictMessage"),
-			conflict.CloudHabitCount,
-			conflict.LocalHabitCount);
+			var message = string.Format(
+				_localization.Get("SignInConflictMessage"),
+				conflict.CloudHabitCount,
+				conflict.LocalHabitCount);
 
-		var useThisDevice = await page.DisplayAlert(
-			_localization.Get("SignInConflictTitle"),
-			message,
-			_localization.Get("SignInConflictUseThisDevice"),
-			_localization.Get("SignInConflictKeepCloud"));
+			var useThisDevice = await page.DisplayAlert(
+				_localization.Get("SignInConflictTitle"),
+				message,
+				_localization.Get("SignInConflictUseThisDevice"),
+				_localization.Get("SignInConflictKeepCloud"));
 
-		return useThisDevice
-			? SignInDataResolution.UseThisDevice
-			: SignInDataResolution.KeepCloud;
+			return useThisDevice
+				? SignInDataResolution.UseThisDevice
+				: SignInDataResolution.KeepCloud;
+		});
+	}
+
+	private Page? ResolveDialogPage()
+	{
+		if (HostPage is not null)
+		{
+			return HostPage;
+		}
+
+		if (Shell.Current?.CurrentPage is Page shellPage)
+		{
+			return shellPage;
+		}
+
+		return Application.Current?.Windows.FirstOrDefault()?.Page;
 	}
 
 	[RelayCommand]
@@ -220,6 +265,40 @@ public partial class SettingsViewModel : ObservableObject
 			AccountErrorMessage = UserFriendlyErrorMapper.FromException(ex, _localization);
 		}
 	}
+
+	[RelayCommand]
+	private async Task ExportDiagnosticLogsAsync()
+	{
+		try
+		{
+			AccountErrorMessage = null;
+			_diagnosticLog.LogInfo("Diagnostics", "Export requested from Settings.");
+			await _diagnosticLog.ExportAndShareAsync(BuildDiagnosticContext());
+		}
+		catch (Exception ex)
+		{
+			_diagnosticLog.LogError("Diagnostics", ex, "Export failed.");
+			AccountErrorMessage = _localization.Get("ExportDiagnosticLogsFailed");
+		}
+	}
+
+	private DiagnosticExportContext BuildDiagnosticContext() => new()
+	{
+		AppVersion = AppInfo.VersionString,
+		BuildString = AppInfo.BuildString,
+		Platform = DeviceInfo.Platform.ToString(),
+		PlatformVersion = DeviceInfo.VersionString,
+		Culture = _localization.CurrentCultureName,
+		AuthState = IsSignedIn ? "SignedIn" : "Guest",
+		UserIdHint = MaskUserId(_authService.UserId)
+	};
+
+	private static string? MaskUserId(string? userId) =>
+		string.IsNullOrWhiteSpace(userId)
+			? null
+			: userId.Length <= 8
+				? $"{userId}..."
+				: $"{userId[..8]}...";
 
 	[RelayCommand]
 	private async Task OpenRepositoryAsync()
@@ -297,6 +376,7 @@ public partial class SettingsViewModel : ObservableObject
 		OnPropertyChanged(nameof(ViewSourceLabel));
 		OnPropertyChanged(nameof(LicenseLabel));
 		OnPropertyChanged(nameof(CheckForUpdatesLabel));
+		OnPropertyChanged(nameof(ExportDiagnosticLogsLabel));
 		OnPropertyChanged(nameof(WidgetSectionTitle));
 		OnPropertyChanged(nameof(WidgetTintLabel));
 		OnPropertyChanged(nameof(WidgetTintSubtleLabel));

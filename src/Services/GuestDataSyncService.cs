@@ -9,15 +9,18 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 	private readonly IFirebaseAuth _auth;
 	private readonly IFirebaseFirestore _firestore;
 	private readonly ILocalGuestStore _guestStore;
+	private readonly IDiagnosticLogService _diagnosticLog;
 
 	public GuestDataSyncService(
 		IFirebaseAuth auth,
 		IFirebaseFirestore firestore,
-		ILocalGuestStore guestStore)
+		ILocalGuestStore guestStore,
+		IDiagnosticLogService diagnosticLog)
 	{
 		_auth = auth;
 		_firestore = firestore;
 		_guestStore = guestStore;
+		_diagnosticLog = diagnosticLog;
 	}
 
 	public async Task<SignInConflictInfo> EvaluateSignInConflictAsync(CancellationToken cancellationToken = default)
@@ -34,6 +37,10 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 
 		var meaningfulLocal = SignInGuestDataHelper.HasMeaningfulGuestData(guest, sampleIds);
 		var cloudHasData = SignInGuestDataHelper.HasCloudData(cloudHabits, cloudLogs);
+
+		_diagnosticLog.LogInfo(
+			"SignInSync",
+			$"Evaluate user={MaskUserId(userId)} localHabits={SignInGuestDataHelper.CountLocalHabits(guest)} cloudHabits={cloudHabits.Count} cloudLogs={cloudLogs.Count} meaningfulLocal={meaningfulLocal} cloudHasData={cloudHasData}");
 
 		return SignInConflictInfo.Evaluate(
 			meaningfulLocal,
@@ -52,13 +59,18 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		switch (resolution)
 		{
 			case SignInDataResolution.KeepCloud:
+				_diagnosticLog.LogInfo("SignInSync", "KeepCloud: clearing guest store.");
 				await _guestStore.ClearAsync(cancellationToken);
 				break;
 
 			case SignInDataResolution.UseThisDevice:
 				var guest = await _guestStore.LoadAsync(cancellationToken);
+				_diagnosticLog.LogInfo(
+					"SignInSync",
+					$"UseThisDevice: uploading guest habits={guest.Habits.Count(h => h.IsActive)} logs={guest.Logs.Count}.");
 				await ReplaceCloudWithGuestAsync(userId, guest, cancellationToken);
 				await _guestStore.ClearAsync(cancellationToken);
+				_diagnosticLog.LogInfo("SignInSync", "UseThisDevice: upload complete, guest cleared.");
 				break;
 
 			default:
@@ -126,10 +138,12 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 			.Where(d => d.Data is not null && (d.Data!.IsCompleted || d.Data.Count > 0))
 			.Select(d =>
 			{
-				var habitId = d.Data!.HabitId;
-				var date = DateOnly.TryParse(d.Data.Date, out var parsed)
-					? parsed
-					: ParseLogDateFromId(d.Reference.Id, habitId);
+				var habitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, d.Data!.HabitId);
+				var date = HabitLogDocumentId.TryParse(d.Reference.Id, out var fromId, out _)
+					? fromId
+					: DateOnly.TryParse(d.Data.Date, out var parsed)
+						? parsed
+						: DateOnly.FromDateTime(DateTime.Today);
 				var count = d.Data.Count > 0 ? d.Data.Count : 1;
 				return new GuestLogEntry
 				{
@@ -139,6 +153,7 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 					Count = count
 				};
 			})
+			.Where(e => !string.IsNullOrEmpty(e.HabitId))
 			.ToList();
 	}
 
@@ -179,23 +194,14 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		}
 	}
 
-	private static DateOnly ParseLogDateFromId(string logId, string habitId)
-	{
-		var suffix = $"_{habitId}";
-		if (logId.EndsWith(suffix, StringComparison.Ordinal) &&
-		    DateOnly.TryParse(logId.AsSpan(0, logId.Length - suffix.Length), out var date))
-		{
-			return date;
-		}
-
-		return DateOnly.FromDateTime(DateTime.Today);
-	}
-
 	private ICollectionReference HabitsCollection(string userId) =>
 		_firestore.GetCollection($"users/{userId}/habits");
 
 	private ICollectionReference LogsCollection(string userId) =>
 		_firestore.GetCollection($"users/{userId}/logs");
+
+	private static string MaskUserId(string userId) =>
+		userId.Length <= 8 ? $"{userId}..." : $"{userId[..8]}...";
 
 	private sealed class DeleteMarkerDto;
 
@@ -211,7 +217,7 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		public int SortOrder { get; set; }
 		public bool ReminderEnabled { get; set; }
 		public string? ReminderTime { get; set; }
-		public DateTimeOffset CreatedAt { get; set; }
+		public string CreatedAt { get; set; } = string.Empty;
 		public bool IsActive { get; set; } = true;
 
 		public static HabitDto FromModel(Habit habit) => new()
@@ -226,7 +232,7 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 			SortOrder = habit.SortOrder,
 			ReminderEnabled = habit.ReminderEnabled,
 			ReminderTime = habit.ReminderTime?.ToString("HH:mm"),
-			CreatedAt = habit.CreatedAt,
+			CreatedAt = habit.CreatedAt.ToString("O"),
 			IsActive = habit.IsActive
 		};
 
@@ -245,7 +251,7 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 			SortOrder = SortOrder,
 			ReminderEnabled = ReminderEnabled,
 			ReminderTime = TimeOnly.TryParse(ReminderTime, out var time) ? time : null,
-			CreatedAt = CreatedAt,
+			CreatedAt = DateTimeOffset.TryParse(CreatedAt, out var parsed) ? parsed : DateTimeOffset.UtcNow,
 			IsActive = IsActive
 		};
 	}

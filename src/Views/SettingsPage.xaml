@@ -314,6 +314,13 @@
                    TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
             <Label Text="{Binding AppVersionLabel}" FontSize="14"
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+            <Button Text="{Binding ExportDiagnosticLogsLabel}"
+                    Command="{Binding ExportDiagnosticLogsCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}"
+                    BorderWidth="0"
+                    Padding="0"
+                    HorizontalOptions="Start" />
             <Button Text="{Binding CheckForUpdatesLabel}"
                     Command="{Binding CheckForUpdatesCommand}"
                     IsVisible="{Binding IsCheckForUpdatesSupported}"
