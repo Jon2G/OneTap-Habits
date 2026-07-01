@@ -20,12 +20,49 @@
         </ToolbarItem>
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="*,Auto" Padding="16">
-        <RefreshView Grid.Row="0" Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16" RowSpacing="12">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <Button Grid.Column="0"
+                    Text="&#xE314;"
+                    FontFamily="MaterialIcons"
+                    FontSize="22"
+                    Command="{Binding PreviousDayCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}"
+                    Padding="8"
+                    SemanticProperties.Description="{Binding PreviousDayLabel}" />
+            <Label Grid.Column="1"
+                   Text="{Binding Title}"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+            <Button Grid.Column="2"
+                    Text="&#xE315;"
+                    FontFamily="MaterialIcons"
+                    FontSize="22"
+                    Command="{Binding NextDayCommand}"
+                    IsEnabled="{Binding CanGoToNextDay}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}"
+                    Padding="8"
+                    SemanticProperties.Description="{Binding NextDayLabel}" />
+        </Grid>
+
+        <Button Grid.Row="1"
+                Text="{Binding GoToTodayLabel}"
+                Command="{Binding GoToTodayCommand}"
+                IsVisible="{Binding ShowGoToToday}"
+                HorizontalOptions="Center"
+                BackgroundColor="Transparent"
+                TextColor="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}" />
+
+        <RefreshView Grid.Row="2" Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
             <CollectionView x:Name="HabitsCollectionView"
                             ItemsSource="{Binding Habits}"
                             SelectionMode="None"
-                            CanReorderItems="True">
+                            CanReorderItems="{Binding IsViewingToday}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="vm:TodayHabitItem">
                         <SwipeView>
@@ -91,7 +128,7 @@
             </CollectionView>
         </RefreshView>
 
-        <Button Grid.Row="1"
+        <Button Grid.Row="3"
                 Command="{Binding AddHabitCommand}"
                 CornerRadius="28"
                 HeightRequest="56"

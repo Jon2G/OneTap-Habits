@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,7 +9,7 @@ using OneTapHabits.Services.Widget;
 
 namespace OneTapHabits.ViewModels;
 
-public partial class TodayViewModel : ObservableObject
+public partial class TodayViewModel : ObservableObject, IQueryAttributable
 {
 	private const int StreakLookbackDays = 400;
 
@@ -25,6 +26,9 @@ public partial class TodayViewModel : ObservableObject
 
 	[ObservableProperty]
 	private bool isRefreshing;
+
+	[ObservableProperty]
+	private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
 
 	public TodayViewModel(
 		IHabitService habitService,
@@ -46,9 +50,46 @@ public partial class TodayViewModel : ObservableObject
 		_reminderService = reminderService;
 	}
 
-	public string Title => _localization.Get("TodayTitle");
+	private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+
+	public bool IsViewingToday => SelectedDate == Today;
+
+	public bool ShowGoToToday => !IsViewingToday;
+
+	public bool CanGoToNextDay => SelectedDate < Today;
+
+	public string Title => IsViewingToday
+		? _localization.Get("TodayTitle")
+		: SelectedDate.ToDateTime(TimeOnly.MinValue).ToString("D", CultureInfo.CurrentUICulture);
+
 	public string AddHabitLabel => _localization.Get("AddHabit");
 	public string SettingsLabel => _localization.Get("Settings");
+	public string PreviousDayLabel => _localization.Get("PreviousDay");
+	public string NextDayLabel => _localization.Get("NextDay");
+	public string GoToTodayLabel => _localization.Get("GoToToday");
+
+	public void ApplyQueryAttributes(IDictionary<string, object> query)
+	{
+		if (query.TryGetValue("date", out var value) &&
+		    value is string dateText &&
+		    ViewDateNavigationHelper.TryParseQueryDate(dateText, out var date))
+		{
+			SelectedDate = ViewDateNavigationHelper.ClampToTodayOrPast(date, Today);
+			OnPropertyChanged(nameof(Title));
+			OnPropertyChanged(nameof(IsViewingToday));
+			OnPropertyChanged(nameof(ShowGoToToday));
+			OnPropertyChanged(nameof(CanGoToNextDay));
+			_ = LoadAsync();
+		}
+	}
+
+	partial void OnSelectedDateChanged(DateOnly value)
+	{
+		OnPropertyChanged(nameof(Title));
+		OnPropertyChanged(nameof(IsViewingToday));
+		OnPropertyChanged(nameof(ShowGoToToday));
+		OnPropertyChanged(nameof(CanGoToNextDay));
+	}
 
 	[RelayCommand]
 	public async Task LoadAsync()
@@ -69,15 +110,41 @@ public partial class TodayViewModel : ObservableObject
 		}
 	}
 
+	[RelayCommand]
+	private async Task PreviousDayAsync()
+	{
+		SelectedDate = SelectedDate.AddDays(-1);
+		await LoadHabitsAsync();
+	}
+
+	[RelayCommand]
+	private async Task NextDayAsync()
+	{
+		if (!CanGoToNextDay)
+		{
+			return;
+		}
+
+		SelectedDate = SelectedDate.AddDays(1);
+		await LoadHabitsAsync();
+	}
+
+	[RelayCommand]
+	private async Task GoToTodayAsync()
+	{
+		SelectedDate = Today;
+		await LoadHabitsAsync();
+	}
+
 	private async Task LoadHabitsAsync()
 	{
 		await _firstLaunchSeed.SeedIfNeededAsync();
 
-		var today = DateOnly.FromDateTime(DateTime.Today);
-		var habits = await _habitService.GetTodayHabitsAsync(today);
-		var countMap = await _logService.GetCountMapForDateAsync(today);
-		var historyStart = today.AddDays(-StreakLookbackDays);
-		var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, today);
+		var viewDate = SelectedDate;
+		var habits = await _habitService.GetTodayHabitsAsync(viewDate);
+		var countMap = await _logService.GetCountMapForDateAsync(viewDate);
+		var historyStart = viewDate.AddDays(-StreakLookbackDays);
+		var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, viewDate);
 
 		var editLabel = _localization.Get("EditHabit");
 		var deleteLabel = _localization.Get("DeleteHabit");
@@ -87,11 +154,6 @@ public partial class TodayViewModel : ObservableObject
 		foreach (var habit in habits)
 		{
 			var count = countMap.TryGetValue(habit.Id, out var value) ? value : 0;
-			if (HabitDailyTargetHelper.IsDailyTargetMet(habit, count))
-			{
-				continue;
-			}
-
 			var completionByDate = CompletionMapBuilder.BuildForHabit(habit.Id, historyLogs);
 			var dailyTarget = HabitDailyTargetHelper.GetDailyTarget(habit);
 
@@ -100,15 +162,15 @@ public partial class TodayViewModel : ObservableObject
 
 			if (habit.ScheduleMode == HabitScheduleMode.TimesPerWeek)
 			{
-				var weekStart = WeekBoundaryHelper.GetWeekStart(today);
+				var weekStart = WeekBoundaryHelper.GetWeekStart(viewDate);
 				var weekCount = _weeklyProgress.CountCompletionsInWeek(habit.Id, weekStart, historyLogs);
-				var weeklyStreak = _weeklyProgress.CalculateWeeklyStreak(habit, historyLogs, today);
+				var weeklyStreak = _weeklyProgress.CalculateWeeklyStreak(habit, historyLogs, viewDate);
 				primaryLabel = string.Format(_localization.Get("WeeklyProgressFormat"), weekCount, habit.TimesPerWeek);
 				secondaryLabel = string.Format(_localization.Get("WeeklyStreakFormat"), weeklyStreak);
 			}
 			else
 			{
-				var streak = _streakService.CalculateCurrentStreak(habit, completionByDate, today);
+				var streak = _streakService.CalculateCurrentStreak(habit, completionByDate, viewDate);
 				primaryLabel = string.Format(_localization.Get("Streak"), streak);
 				secondaryLabel = dailyTarget > 1
 					? string.Format(_localization.Get("DailyProgressFormat"), count, dailyTarget)
@@ -131,11 +193,19 @@ public partial class TodayViewModel : ObservableObject
 				swipeHint));
 		}
 
-		await _widgetRefresh.RefreshAsync();
+		if (IsViewingToday)
+		{
+			await _widgetRefresh.RefreshAsync();
+		}
 	}
 
 	public async Task PersistHabitOrderAsync()
 	{
+		if (!IsViewingToday)
+		{
+			return;
+		}
+
 		var visibleOrder = Habits.Select(h => h.Habit.Id).ToList();
 		if (visibleOrder.Count == 0)
 		{
@@ -155,8 +225,12 @@ public partial class TodayViewModel : ObservableObject
 	[RelayCommand]
 	private async Task IncrementHabitAsync(TodayHabitItem item)
 	{
-		var today = DateOnly.FromDateTime(DateTime.Today);
-		await _logService.IncrementCountAsync(item.Habit.Id, today);
+		if (HabitDailyTargetHelper.IsDailyTargetMet(item.Habit, item.TodayCount))
+		{
+			return;
+		}
+
+		await _logService.IncrementCountAsync(item.Habit.Id, SelectedDate);
 		await LoadAsync();
 	}
 
@@ -240,20 +314,20 @@ public sealed class TodayHabitItem(
 	public string SwipeHint { get; } = swipeHint;
 	public Color AccentColor => Color.FromArgb(Habit.ColorHex);
 
-	public bool HasProgress => DailyTarget > 1 && TodayCount > 0;
+	public bool IsDailyTargetMet => TodayCount >= DailyTarget;
 
-	public Color CompletedStrokeColor => HasProgress || TodayCount > 0
+	public Color CompletedStrokeColor => TodayCount > 0
 		? Color.FromArgb("#22C55E")
 		: Color.FromArgb("#E5E7EB");
 
-	public Color CardBackgroundColor => HasProgress || TodayCount > 0
+	public Color CardBackgroundColor => TodayCount > 0
 		? (IsDarkTheme ? Color.FromArgb("#1A2B22") : Color.FromArgb("#F0FDF4"))
 		: (IsDarkTheme ? Color.FromArgb("#1E1E1E") : Color.FromArgb("#FFFFFF"));
 
 	private static bool IsDarkTheme =>
 		Application.Current?.RequestedTheme == AppTheme.Dark;
 
-	public Color CompletedTextColor => HasProgress || TodayCount > 0
+	public Color CompletedTextColor => TodayCount > 0
 		? Color.FromArgb("#22C55E")
 		: Color.FromArgb("#6B7280");
 }

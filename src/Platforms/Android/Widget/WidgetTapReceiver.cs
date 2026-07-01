@@ -32,6 +32,10 @@ public class WidgetTapReceiver : BroadcastReceiver
 				{
 					Services.WidgetSnapshotStore.RemoveHabit(context, habitId);
 				}
+				else
+				{
+					Services.WidgetSnapshotStore.UpdateHabitCount(context, habitId, result.NewCount);
+				}
 
 				HabitsAppWidgetProvider.UpdateAllWidgets(context);
 			}

@@ -148,6 +148,17 @@ public partial class CalendarViewModel : ObservableObject
 		await Shell.Current.GoToAsync("settings");
 	}
 
+	[RelayCommand]
+	private async Task OpenDayAsync(CalendarDayDisplay day)
+	{
+		if (!day.CanOpen)
+		{
+			return;
+		}
+
+		await Shell.Current.GoToAsync($"//today?date={day.Date:yyyy-MM-dd}");
+	}
+
 	private void RebuildWeekdayHeaders()
 	{
 		WeekdayHeaders.Clear();
@@ -222,22 +233,32 @@ public sealed class CalendarDayDisplay
 {
 	public static CalendarDayDisplay Empty { get; } = new();
 
+	public DateOnly Date { get; init; }
 	public int DayNumber { get; init; }
 	public bool IsCurrentMonth { get; init; }
 	public bool IsToday { get; init; }
+	public bool IsFuture { get; init; }
+	public bool CanOpen { get; init; }
 	public bool HasOverflow { get; init; }
 	public string OverflowText { get; init; } = string.Empty;
 	public IReadOnlyList<CalendarLineDisplay> Lines { get; init; } = [];
 
-	public static CalendarDayDisplay FromCell(CalendarDayCell cell) => new()
+	public static CalendarDayDisplay FromCell(CalendarDayCell cell)
 	{
-		DayNumber = cell.Date.Day,
-		IsCurrentMonth = cell.IsCurrentMonth,
-		IsToday = cell.IsToday,
-		Lines = cell.VisibleLines.Select(l => new CalendarLineDisplay(l.ColorHex)).ToList(),
-		HasOverflow = cell.OverflowCount > 0,
-		OverflowText = $"+{cell.OverflowCount}"
-	};
+		var today = DateOnly.FromDateTime(DateTime.Today);
+		return new()
+		{
+			Date = cell.Date,
+			DayNumber = cell.Date.Day,
+			IsCurrentMonth = cell.IsCurrentMonth,
+			IsToday = cell.IsToday,
+			IsFuture = cell.Date > today,
+			CanOpen = cell.IsCurrentMonth && cell.Date <= today,
+			Lines = cell.VisibleLines.Select(l => new CalendarLineDisplay(l.ColorHex)).ToList(),
+			HasOverflow = cell.OverflowCount > 0,
+			OverflowText = $"+{cell.OverflowCount}"
+		};
+	}
 }
 
 public sealed class CalendarLineDisplay(string colorHex)

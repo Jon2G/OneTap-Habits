@@ -50,6 +50,24 @@ public static class WidgetSnapshotStore
 		Save(context, snapshot);
 	}
 
+	public static void UpdateHabitCount(Context context, string habitId, int newCount)
+	{
+		var snapshot = Load(context);
+		if (!snapshot.IsSignedIn)
+		{
+			return;
+		}
+
+		var entry = snapshot.Habits.FirstOrDefault(h => h.Id == habitId);
+		if (entry is null)
+		{
+			return;
+		}
+
+		entry.Count = newCount;
+		Save(context, snapshot);
+	}
+
 	public static void Clear(Context context)
 	{
 		Save(context, WidgetSnapshot.NotSignedIn());

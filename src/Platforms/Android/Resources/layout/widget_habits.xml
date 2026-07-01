@@ -65,13 +65,22 @@
 				<TextView
 					android:id="@+id/cell0_name"
 					android:layout_width="match_parent"
-					android:layout_height="0dp"
-					android:layout_weight="1"
+					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="3"
+					android:maxLines="2"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
+
+				<TextView
+					android:id="@+id/cell0_progress"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:paddingTop="2dp"
+					android:textColor="#9CA3AF"
+					android:textSize="10sp"
+					android:visibility="gone" />
 			</LinearLayout>
 
 			<LinearLayout
@@ -88,13 +97,22 @@
 				<TextView
 					android:id="@+id/cell1_name"
 					android:layout_width="match_parent"
-					android:layout_height="0dp"
-					android:layout_weight="1"
+					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="3"
+					android:maxLines="2"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
+
+				<TextView
+					android:id="@+id/cell1_progress"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:paddingTop="2dp"
+					android:textColor="#9CA3AF"
+					android:textSize="10sp"
+					android:visibility="gone" />
 			</LinearLayout>
 		</LinearLayout>
 
@@ -120,13 +138,22 @@
 				<TextView
 					android:id="@+id/cell2_name"
 					android:layout_width="match_parent"
-					android:layout_height="0dp"
-					android:layout_weight="1"
+					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="3"
+					android:maxLines="2"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
+
+				<TextView
+					android:id="@+id/cell2_progress"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:paddingTop="2dp"
+					android:textColor="#9CA3AF"
+					android:textSize="10sp"
+					android:visibility="gone" />
 			</LinearLayout>
 
 			<LinearLayout
@@ -143,13 +170,22 @@
 				<TextView
 					android:id="@+id/cell3_name"
 					android:layout_width="match_parent"
-					android:layout_height="0dp"
-					android:layout_weight="1"
+					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="3"
+					android:maxLines="2"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
+
+				<TextView
+					android:id="@+id/cell3_progress"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:paddingTop="2dp"
+					android:textColor="#9CA3AF"
+					android:textSize="10sp"
+					android:visibility="gone" />
 			</LinearLayout>
 		</LinearLayout>
 
@@ -175,13 +211,22 @@
 				<TextView
 					android:id="@+id/cell4_name"
 					android:layout_width="match_parent"
-					android:layout_height="0dp"
-					android:layout_weight="1"
+					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="3"
+					android:maxLines="2"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
+
+				<TextView
+					android:id="@+id/cell4_progress"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:paddingTop="2dp"
+					android:textColor="#9CA3AF"
+					android:textSize="10sp"
+					android:visibility="gone" />
 			</LinearLayout>
 
 			<LinearLayout
@@ -198,13 +243,22 @@
 				<TextView
 					android:id="@+id/cell5_name"
 					android:layout_width="match_parent"
-					android:layout_height="0dp"
-					android:layout_weight="1"
+					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:gravity="center"
-					android:maxLines="3"
+					android:maxLines="2"
 					android:textColor="#F5F5F5"
 					android:textSize="12sp" />
+
+				<TextView
+					android:id="@+id/cell5_progress"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:paddingTop="2dp"
+					android:textColor="#9CA3AF"
+					android:textSize="10sp"
+					android:visibility="gone" />
 			</LinearLayout>
 		</LinearLayout>
 

@@ -27,6 +27,12 @@ public static class WidgetRemoteViewsBuilder
 		Resource.Id.cell3_name, Resource.Id.cell4_name, Resource.Id.cell5_name
 	];
 
+	private static readonly int[] ProgressIds =
+	[
+		Resource.Id.cell0_progress, Resource.Id.cell1_progress, Resource.Id.cell2_progress,
+		Resource.Id.cell3_progress, Resource.Id.cell4_progress, Resource.Id.cell5_progress
+	];
+
 	public static RemoteViews Build(Context context, WidgetSnapshot snapshot)
 	{
 		var views = new RemoteViews(context.PackageName!, Resource.Layout.widget_habits);
@@ -67,6 +73,16 @@ public static class WidgetRemoteViewsBuilder
 			var habit = snapshot.Habits[i];
 			views.SetViewVisibility(CellIds[i], ViewStates.Visible);
 			views.SetTextViewText(NameIds[i], habit.Name);
+			var progressText = WidgetProgressFormatter.FormatProgress(habit.Count, habit.TimesPerDay);
+			if (progressText is null)
+			{
+				views.SetViewVisibility(ProgressIds[i], ViewStates.Gone);
+			}
+			else
+			{
+				views.SetViewVisibility(ProgressIds[i], ViewStates.Visible);
+				views.SetTextViewText(ProgressIds[i], progressText);
+			}
 			if (HabitNameDisplayHelper.IsSingleEmoji(habit.Name))
 			{
 				views.SetTextViewTextSize(

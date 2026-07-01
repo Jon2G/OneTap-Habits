@@ -51,8 +51,17 @@
   <data name="PreviousMonth" xml:space="preserve">
     <value>Mes anterior</value>
   </data>
+  <data name="PreviousDay" xml:space="preserve">
+    <value>Día anterior</value>
+  </data>
   <data name="NextMonth" xml:space="preserve">
     <value>Mes siguiente</value>
+  </data>
+  <data name="NextDay" xml:space="preserve">
+    <value>Día siguiente</value>
+  </data>
+  <data name="GoToToday" xml:space="preserve">
+    <value>Ir a hoy</value>
   </data>
   <data name="DayMonShort" xml:space="preserve"><value>Lu</value></data>
   <data name="DayTueShort" xml:space="preserve"><value>Ma</value></data>
