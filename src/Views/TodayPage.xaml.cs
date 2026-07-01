@@ -24,6 +24,7 @@ public partial class TodayPage : ContentPage
 		base.OnAppearing();
 		WeakReferenceMessenger.Default.Register<AppResumedMessage>(this, OnAppResumed);
 		WeakReferenceMessenger.Default.Register<AuthChangedMessage>(this, OnAuthChanged);
+		WeakReferenceMessenger.Default.Register<CloudCacheUpdatedMessage>(this, OnCloudCacheUpdated);
 		await _viewModel.LoadCommand.ExecuteAsync(null);
 #if ANDROID
 		_ = _updateCoordinator.CheckForUpdatesAsync(Navigation, manual: false);
@@ -34,6 +35,7 @@ public partial class TodayPage : ContentPage
 	{
 		WeakReferenceMessenger.Default.Unregister<AppResumedMessage>(this);
 		WeakReferenceMessenger.Default.Unregister<AuthChangedMessage>(this);
+		WeakReferenceMessenger.Default.Unregister<CloudCacheUpdatedMessage>(this);
 		base.OnDisappearing();
 	}
 
@@ -45,6 +47,11 @@ public partial class TodayPage : ContentPage
 	private async void OnAuthChanged(object recipient, AuthChangedMessage message)
 	{
 		await _viewModel.LoadCommand.ExecuteAsync(null);
+	}
+
+	private async void OnCloudCacheUpdated(object recipient, CloudCacheUpdatedMessage message)
+	{
+		await _viewModel.ReloadFromCacheAsync();
 	}
 
 	private async void OnReorderCompleted(object? sender, EventArgs e)
