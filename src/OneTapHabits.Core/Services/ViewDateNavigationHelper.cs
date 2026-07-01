@@ -25,17 +25,26 @@ public static class ViewDateNavigationHelper
 		string yesterdayTitle,
 		CultureInfo? culture = null)
 	{
-		if (selectedDate == today)
+		var daysBack = today.DayNumber - selectedDate.DayNumber;
+		if (daysBack == 0)
 		{
 			return todayTitle;
 		}
 
-		if (selectedDate == today.AddDays(-1))
+		if (daysBack == 1)
 		{
 			return yesterdayTitle;
 		}
 
 		culture ??= CultureInfo.CurrentUICulture;
+
+		if (daysBack <= MaxWeekdayTitleDaysBack)
+		{
+			return culture.DateTimeFormat.GetDayName(selectedDate.DayOfWeek);
+		}
+
 		return selectedDate.ToDateTime(TimeOnly.MinValue).ToString("D", culture);
 	}
+
+	private const int MaxWeekdayTitleDaysBack = 7;
 }

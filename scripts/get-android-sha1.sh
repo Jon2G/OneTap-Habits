@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+WORKSPACE_ROOT="$(cd "$ROOT/../.." && pwd)"
+SECRETS_ENV="$WORKSPACE_ROOT/.cursor/projects/OneTap-Habits/secrets/android-signing.env"
 RELEASE_KEYSTORE="$ROOT/src/onetaphabits.keystore"
 DEBUG_KEYSTORE="${HOME}/.android/debug.keystore"
 
@@ -28,11 +30,22 @@ print_sha1 "Debug (androiddebugkey)" \
   keytool -list -v -alias androiddebugkey -keystore "$DEBUG_KEYSTORE" -storepass android -keypass android
 
 if [[ -f "$RELEASE_KEYSTORE" ]]; then
-  echo "=== Release (onetaphabits) ==="
-  echo "Keystore: $RELEASE_KEYSTORE"
-  echo "Run (enter keystore password when prompted):"
-  echo "  keytool -list -v -alias onetaphabits -keystore \"$RELEASE_KEYSTORE\""
-  echo ""
+  if [[ -f "$SECRETS_ENV" ]]; then
+    # shellcheck disable=SC1090
+    source "$SECRETS_ENV"
+  fi
+  if [[ -n "${ANDROID_SIGNING_PASSWORD:-}" ]]; then
+    print_sha1 "Release (onetaphabits)" \
+      keytool -list -v -alias onetaphabits -keystore "$RELEASE_KEYSTORE" \
+        -storepass "$ANDROID_SIGNING_PASSWORD" -keypass "$ANDROID_SIGNING_PASSWORD"
+  else
+    echo "=== Release (onetaphabits) ==="
+    echo "Keystore: $RELEASE_KEYSTORE"
+    echo "Set ANDROID_SIGNING_PASSWORD in:"
+    echo "  $SECRETS_ENV"
+    echo "Or run: keytool -list -v -alias onetaphabits -keystore \"$RELEASE_KEYSTORE\""
+    echo ""
+  fi
 else
   echo "=== Release keystore not found ==="
   echo "Expected: $RELEASE_KEYSTORE"

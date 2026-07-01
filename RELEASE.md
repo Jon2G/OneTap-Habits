@@ -15,12 +15,26 @@ Configure in **Settings → Secrets and variables → Actions**:
 
 ## Keystore (one-time, local)
 
+Canonical copy: **`.cursor/projects/OneTap-Habits/secrets/`** (workspace, gitignored via `secrets/.gitignore`):
+
+- `onetaphabits.keystore`
+- `android-signing.env` (`ANDROID_SIGNING_PASSWORD=...`)
+
+Copy keystore to `src/onetaphabits.keystore` for local builds. GitHub Actions secrets **`ANDROID_KEYSTORE_BASE64`** and **`ANDROID_SIGNING_PASSWORD`** must match this keystore.
+
 ```bash
+# Regenerate (only if rotating keys — updates Firebase SHA-1 requirement)
 keytool -genkey -v -keystore src/onetaphabits.keystore -alias onetaphabits -keyalg RSA -keysize 2048 -validity 10000
 base64 -i src/onetaphabits.keystore | pbcopy   # → ANDROID_KEYSTORE_BASE64
 ```
 
-Register **debug and release SHA-1** in Firebase Console for Google Sign-In.
+Local release build:
+
+```bash
+./scripts/build-release-apk.sh
+```
+
+Register **debug and release SHA-1** in Firebase Console for Google Sign-In (`./scripts/get-android-sha1.sh`).
 
 ## GitHub Pages
 

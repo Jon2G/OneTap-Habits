@@ -1,3 +1,4 @@
+using System.Globalization;
 using OneTapHabits.Services;
 using OneTapHabits.Services.Widget;
 using Xunit;
@@ -59,20 +60,30 @@ public class ViewDateNavigationHelperTests
 	[Fact]
 	public void FormatDayTitle_ReturnsYesterdayTitle_WhenSelectedIsYesterday()
 	{
-		var today = new DateOnly(2026, 6, 30);
-		var yesterday = new DateOnly(2026, 6, 29);
+		var today = new DateOnly(2026, 7, 1); // Wednesday
+		var yesterday = new DateOnly(2026, 6, 30);
 		Assert.Equal("Yesterday", ViewDateNavigationHelper.FormatDayTitle(yesterday, today, "Today", "Yesterday"));
 	}
 
 	[Fact]
-	public void FormatDayTitle_ReturnsFormattedDate_ForOlderDays()
+	public void FormatDayTitle_ReturnsWeekdayName_WhenWithinSevenDaysBack()
 	{
-		var today = new DateOnly(2026, 6, 30);
-		var older = new DateOnly(2026, 6, 28);
+		var today = new DateOnly(2026, 7, 1); // Wednesday
+		var threeDaysBack = new DateOnly(2026, 6, 28); // Sunday
+		var culture = new CultureInfo("en-US");
+		Assert.Equal("Sunday", ViewDateNavigationHelper.FormatDayTitle(
+			threeDaysBack, today, "Today", "Yesterday", culture));
+	}
+
+	[Fact]
+	public void FormatDayTitle_ReturnsFormattedDate_WhenMoreThanSevenDaysBack()
+	{
+		var today = new DateOnly(2026, 7, 1);
+		var eightDaysBack = new DateOnly(2026, 6, 23);
 		var title = ViewDateNavigationHelper.FormatDayTitle(
-			older, today, "Today", "Yesterday", System.Globalization.CultureInfo.InvariantCulture);
+			eightDaysBack, today, "Today", "Yesterday", CultureInfo.InvariantCulture);
 		Assert.Contains("2026", title);
-		Assert.Contains("28", title);
+		Assert.Contains("23", title);
 	}
 }
 
