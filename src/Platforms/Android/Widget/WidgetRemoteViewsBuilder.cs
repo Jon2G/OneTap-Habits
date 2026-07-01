@@ -33,7 +33,7 @@ public static class WidgetRemoteViewsBuilder
 		Resource.Id.cell3_progress, Resource.Id.cell4_progress, Resource.Id.cell5_progress
 	];
 
-	public static RemoteViews Build(Context context, WidgetSnapshot snapshot)
+	public static RemoteViews Build(Context context, WidgetSnapshot snapshot, WidgetTapAnimation? tapAnimation = null)
 	{
 		var views = new RemoteViews(context.PackageName!, Resource.Layout.widget_habits);
 
@@ -97,6 +97,12 @@ public static class WidgetRemoteViewsBuilder
 				WidgetAppearanceHelper.DefaultTintPercent);
 			var cellBgHex = WidgetAppearanceHelper.BlendCellBackground(habit.ColorHex, tintPercent);
 			views.SetInt(CellIds[i], "setBackgroundColor", ParseColor(cellBgHex));
+
+			if (tapAnimation is not null && tapAnimation.CellIndex == i)
+			{
+				ApplyTapAnimation(views, context, i, tapAnimation.Kind);
+			}
+
 			views.SetOnClickPendingIntent(CellIds[i], CreateCompleteIntent(context, habit.Id, i));
 		}
 
@@ -130,6 +136,36 @@ public static class WidgetRemoteViewsBuilder
 			Log.Error(Tag, $"Fallback widget update failed for widget {widgetId}: {ex}");
 		}
 	}
+
+	private static void ApplyTapAnimation(
+		RemoteViews views,
+		Context context,
+		int cellIndex,
+		WidgetTapAnimationKind kind)
+	{
+		if (cellIndex < 0 || cellIndex >= CellIds.Length)
+		{
+			return;
+		}
+
+		var feedbackText = kind switch
+		{
+			WidgetTapAnimationKind.Complete => context.GetString(Resource.String.widget_tap_complete)!,
+			WidgetTapAnimationKind.PlusOne => context.GetString(Resource.String.widget_tap_plus_one)!,
+			_ => "+1"
+		};
+
+		var textSizeSp = kind == WidgetTapAnimationKind.Complete ? 26f : 22f;
+		views.SetTextViewText(NameIds[cellIndex], feedbackText);
+		views.SetTextViewTextSize(NameIds[cellIndex], (int)ComplexUnitType.Sp, textSizeSp);
+		views.SetTextColor(NameIds[cellIndex], global::Android.Graphics.Color.ParseColor(CompleteGreenHex));
+		views.SetInt(NameIds[cellIndex], "setMaxLines", 1);
+		views.SetViewVisibility(ProgressIds[cellIndex], ViewStates.Gone);
+		views.SetInt(CellIds[cellIndex], "setBackgroundColor", ParseColor(CompleteCellBackgroundHex));
+	}
+
+	private const string CompleteGreenHex = "#22C55E";
+	private const string CompleteCellBackgroundHex = "#1A3D2E";
 
 	private static void ShowOpenAppEmpty(RemoteViews views, Context context)
 	{

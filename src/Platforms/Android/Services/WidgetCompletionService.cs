@@ -21,7 +21,8 @@ public static class WidgetCompletionService
 	{
 		var today = DateOnly.FromDateTime(DateTime.Today);
 		var snapshot = WidgetSnapshotStore.Load(context);
-		var entry = snapshot.Habits.FirstOrDefault(h => h.Id == habitId);
+		var cellIndex = snapshot.Habits.FindIndex(h => h.Id == habitId);
+		var entry = cellIndex >= 0 ? snapshot.Habits[cellIndex] : null;
 		var dailyTarget = entry?.TimesPerDay ?? 1;
 
 		var userId = CrossFirebaseAuth.Current.CurrentUser?.Uid;
@@ -39,8 +40,24 @@ public static class WidgetCompletionService
 			QueueFirestoreSync(context, userId, habitId, today, newCount);
 		}
 
+		var completed = newCount >= dailyTarget;
+		if (cellIndex >= 0)
+		{
+			var kind = completed ? WidgetTapAnimationKind.Complete : WidgetTapAnimationKind.PlusOne;
+			WidgetTapAnimationStore.Set(context, cellIndex, kind);
+			HabitsAppWidgetProvider.UpdateAllWidgets(context);
+		}
+
 		ApplyWidgetSnapshotUpdate(context, habitId, newCount, dailyTarget);
-		HabitsAppWidgetProvider.UpdateAllWidgets(context);
+
+		if (cellIndex >= 0)
+		{
+			WidgetTapAnimationScheduler.ScheduleFinish(context);
+		}
+		else
+		{
+			HabitsAppWidgetProvider.UpdateAllWidgets(context);
+		}
 
 		return new IncrementResult
 		{

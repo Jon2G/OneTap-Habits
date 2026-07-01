@@ -9,4 +9,6 @@
 	<string name="widget_all_done">All done for today!</string>
 	<string name="widget_no_habits">No habits for the widget today</string>
 	<string name="widget_overflow">+%1$d more in app</string>
+	<string name="widget_tap_plus_one">+1</string>
+	<string name="widget_tap_complete">✓</string>
 </resources>

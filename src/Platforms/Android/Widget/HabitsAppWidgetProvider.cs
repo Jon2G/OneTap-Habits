@@ -42,7 +42,8 @@ public class HabitsAppWidgetProvider : AppWidgetProvider
 		{
 			try
 			{
-				var views = WidgetRemoteViewsBuilder.Build(context, snapshot);
+				var animation = WidgetTapAnimationStore.Load(context);
+				var views = WidgetRemoteViewsBuilder.Build(context, snapshot, animation);
 				appWidgetManager.UpdateAppWidget(widgetId, views);
 				Log.Info(Tag, "Updated widget {0} (signedIn={1}, habits={2})", widgetId, snapshot.IsSignedIn, snapshot.Habits.Count);
 			}
