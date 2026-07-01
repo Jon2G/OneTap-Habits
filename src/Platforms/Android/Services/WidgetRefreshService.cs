@@ -1,4 +1,5 @@
 using OneTapHabits.Models;
+using OneTapHabits.Platforms.Android.AppWidgets;
 using OneTapHabits.Services;
 using OneTapHabits.Services.Widget;
 
@@ -62,6 +63,7 @@ public sealed class WidgetRefreshService : IWidgetRefreshService
 		IReadOnlyList<Habit> habits,
 		IReadOnlyDictionary<string, int> countMap)
 	{
+		WidgetTapAnimationStore.Clear(context);
 		var today = DateOnly.FromDateTime(DateTime.Today);
 		var incomplete = habits
 			.Where(h => h.ShowInWidget)
