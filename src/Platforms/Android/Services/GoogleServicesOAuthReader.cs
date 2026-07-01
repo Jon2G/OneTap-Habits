@@ -1,12 +1,10 @@
-using System.Text.Json;
 using Android.Content;
+using OneTapHabits.Services;
 
 namespace OneTapHabits.Platforms.Android.Services;
 
 public static class GoogleServicesOAuthReader
 {
-	private const int WebClientType = 3;
-
 	public static string? TryGetWebClientId(Context context)
 	{
 		var resourceId = context.Resources?.GetIdentifier(
@@ -36,43 +34,12 @@ public static class GoogleServicesOAuthReader
 				return null;
 			}
 
-			using var document = JsonDocument.Parse(stream);
-			if (!document.RootElement.TryGetProperty("client", out var clients))
-			{
-				return null;
-			}
-
-			foreach (var client in clients.EnumerateArray())
-			{
-				if (!client.TryGetProperty("oauth_client", out var oauthClients))
-				{
-					continue;
-				}
-
-				foreach (var oauthClient in oauthClients.EnumerateArray())
-				{
-					if (!oauthClient.TryGetProperty("client_type", out var clientType) ||
-					    clientType.GetInt32() != WebClientType)
-					{
-						continue;
-					}
-
-					if (oauthClient.TryGetProperty("client_id", out var clientId))
-					{
-						var value = clientId.GetString();
-						if (!string.IsNullOrWhiteSpace(value))
-						{
-							return value;
-						}
-					}
-				}
-			}
+			using var reader = new StreamReader(stream);
+			return GoogleServicesJsonParser.TryGetWebClientId(reader.ReadToEnd());
 		}
 		catch
 		{
-			// Fall through to null when config is missing or malformed.
+			return null;
 		}
-
-		return null;
 	}
 }

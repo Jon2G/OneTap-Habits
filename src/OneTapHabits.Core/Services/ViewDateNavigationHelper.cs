@@ -17,4 +17,25 @@ public static class ViewDateNavigationHelper
 			CultureInfo.InvariantCulture,
 			DateTimeStyles.None,
 			out date);
+
+	public static string FormatDayTitle(
+		DateOnly selectedDate,
+		DateOnly today,
+		string todayTitle,
+		string yesterdayTitle,
+		CultureInfo? culture = null)
+	{
+		if (selectedDate == today)
+		{
+			return todayTitle;
+		}
+
+		if (selectedDate == today.AddDays(-1))
+		{
+			return yesterdayTitle;
+		}
+
+		culture ??= CultureInfo.CurrentUICulture;
+		return selectedDate.ToDateTime(TimeOnly.MinValue).ToString("D", culture);
+	}
 }

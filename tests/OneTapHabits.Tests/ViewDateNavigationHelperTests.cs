@@ -48,6 +48,32 @@ public class ViewDateNavigationHelperTests
 			Assert.Equal(new DateOnly(2026, 6, 28), date);
 		}
 	}
+
+	[Fact]
+	public void FormatDayTitle_ReturnsTodayTitle_WhenSelectedIsToday()
+	{
+		var today = new DateOnly(2026, 6, 30);
+		Assert.Equal("Today", ViewDateNavigationHelper.FormatDayTitle(today, today, "Today", "Yesterday"));
+	}
+
+	[Fact]
+	public void FormatDayTitle_ReturnsYesterdayTitle_WhenSelectedIsYesterday()
+	{
+		var today = new DateOnly(2026, 6, 30);
+		var yesterday = new DateOnly(2026, 6, 29);
+		Assert.Equal("Yesterday", ViewDateNavigationHelper.FormatDayTitle(yesterday, today, "Today", "Yesterday"));
+	}
+
+	[Fact]
+	public void FormatDayTitle_ReturnsFormattedDate_ForOlderDays()
+	{
+		var today = new DateOnly(2026, 6, 30);
+		var older = new DateOnly(2026, 6, 28);
+		var title = ViewDateNavigationHelper.FormatDayTitle(
+			older, today, "Today", "Yesterday", System.Globalization.CultureInfo.InvariantCulture);
+		Assert.Contains("2026", title);
+		Assert.Contains("28", title);
+	}
 }
 
 public class WidgetProgressFormatterTests

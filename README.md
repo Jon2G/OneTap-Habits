@@ -31,6 +31,25 @@ cp src/google-services.json.example src/google-services.json
 
 `google-services.json` is gitignored. Never commit API keys.
 
+#### Google Sign-In setup
+
+1. Firebase Console → **Authentication → Sign-in method → Google → Enable**
+2. Register **debug and release SHA-1** for `com.jon2g.onetaphabits`:
+
+```bash
+chmod +x scripts/get-android-sha1.sh
+./scripts/get-android-sha1.sh
+```
+
+3. Re-download **google-services.json** from Project settings → Your apps → Android
+4. Verify the file includes an `oauth_client` entry with `"client_type": 3` (Web client). An empty `oauth_client` array means SHA-1 was not registered yet — Google Sign-In will fail with a configuration error in Settings.
+
+For CI/release builds, update the **`GOOGLE_SERVICES_JSON_BASE64`** GitHub secret after each config change:
+
+```bash
+base64 -i src/google-services.json | pbcopy
+```
+
 ### 2. Build
 
 ```bash

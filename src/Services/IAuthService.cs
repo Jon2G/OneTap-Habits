@@ -10,7 +10,11 @@ public interface IAuthService
 
 	string? UserEmail { get; }
 
-	Task SignInWithGoogleAsync();
+	Task<SignInConflictInfo> SignInWithGoogleAsync();
+
+	Task CompleteSignInAsync(SignInDataResolution resolution);
+
+	Task AbortSignInAsync();
 
 	Task SignOutToGuestAsync();
 }

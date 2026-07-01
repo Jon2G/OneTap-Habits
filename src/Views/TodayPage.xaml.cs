@@ -23,6 +23,7 @@ public partial class TodayPage : ContentPage
 	{
 		base.OnAppearing();
 		WeakReferenceMessenger.Default.Register<AppResumedMessage>(this, OnAppResumed);
+		WeakReferenceMessenger.Default.Register<AuthChangedMessage>(this, OnAuthChanged);
 		await _viewModel.LoadCommand.ExecuteAsync(null);
 #if ANDROID
 		_ = _updateCoordinator.CheckForUpdatesAsync(Navigation, manual: false);
@@ -32,10 +33,16 @@ public partial class TodayPage : ContentPage
 	protected override void OnDisappearing()
 	{
 		WeakReferenceMessenger.Default.Unregister<AppResumedMessage>(this);
+		WeakReferenceMessenger.Default.Unregister<AuthChangedMessage>(this);
 		base.OnDisappearing();
 	}
 
 	private async void OnAppResumed(object recipient, AppResumedMessage message)
+	{
+		await _viewModel.LoadCommand.ExecuteAsync(null);
+	}
+
+	private async void OnAuthChanged(object recipient, AuthChangedMessage message)
 	{
 		await _viewModel.LoadCommand.ExecuteAsync(null);
 	}

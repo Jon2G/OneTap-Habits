@@ -41,5 +41,8 @@ public sealed class FirstLaunchSeedService : IFirstLaunchSeedService
 		guest.Habits.AddRange(samples);
 		await _guestStore.SaveAsync(guest);
 		Preferences.Default.Set(PreferenceKey, true);
+		Preferences.Default.Set(
+			SignInGuestDataHelper.SampleHabitIdsPreferenceKey,
+			SignInGuestDataHelper.FormatSampleHabitIds(samples.Select(s => s.Id)));
 	}
 }

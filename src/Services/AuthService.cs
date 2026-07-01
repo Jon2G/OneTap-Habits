@@ -24,11 +24,16 @@ public sealed class AuthService : IAuthService
 
 	public string? UserEmail => _firebaseAuth.CurrentUser?.Email;
 
-	public async Task SignInWithGoogleAsync()
+	public async Task<SignInConflictInfo> SignInWithGoogleAsync()
 	{
 		await _googleSignInService.AuthenticateAsync();
-		await _guestDataSyncService.UploadGuestDataToCloudAsync();
+		return await _guestDataSyncService.EvaluateSignInConflictAsync();
 	}
+
+	public Task CompleteSignInAsync(SignInDataResolution resolution) =>
+		_guestDataSyncService.ApplySignInResolutionAsync(resolution);
+
+	public Task AbortSignInAsync() => _firebaseAuth.SignOutAsync();
 
 	public async Task SignOutToGuestAsync()
 	{

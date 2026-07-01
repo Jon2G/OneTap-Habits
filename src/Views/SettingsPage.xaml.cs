@@ -17,6 +17,7 @@ public partial class SettingsPage : ContentPage
 		{
 			viewModel.Navigation = Navigation;
 			viewModel.RefreshChoices();
+			viewModel.RefreshAccountState();
 		}
 	}
 }

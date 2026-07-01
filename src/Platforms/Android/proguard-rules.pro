@@ -4,3 +4,6 @@
 -keep class OneTapHabits.Services.UpdateService { *; }
 -keep class OneTapHabits.Services.UpdateCoordinator { *; }
 -keep class OneTapHabits.Views.UpdatePopupPage { *; }
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.android.gms.**

@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -58,9 +57,11 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 
 	public bool CanGoToNextDay => SelectedDate < Today;
 
-	public string Title => IsViewingToday
-		? _localization.Get("TodayTitle")
-		: SelectedDate.ToDateTime(TimeOnly.MinValue).ToString("D", CultureInfo.CurrentUICulture);
+	public string Title => ViewDateNavigationHelper.FormatDayTitle(
+		SelectedDate,
+		Today,
+		_localization.Get("TodayTitle"),
+		_localization.Get("YesterdayTitle"));
 
 	public string AddHabitLabel => _localization.Get("AddHabit");
 	public string SettingsLabel => _localization.Get("Settings");

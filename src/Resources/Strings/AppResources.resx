@@ -33,6 +33,9 @@
   <data name="TodayTitle" xml:space="preserve">
     <value>Today</value>
   </data>
+  <data name="YesterdayTitle" xml:space="preserve">
+    <value>Yesterday</value>
+  </data>
   <data name="TabToday" xml:space="preserve">
     <value>Today</value>
   </data>
@@ -110,7 +113,19 @@
     <value>Signed in as {0}</value>
   </data>
   <data name="SyncSuccess" xml:space="preserve">
-    <value>Signed in. Your local habits were synced to the cloud.</value>
+    <value>Signed in successfully.</value>
+  </data>
+  <data name="SignInConflictTitle" xml:space="preserve">
+    <value>Which data should we keep?</value>
+  </data>
+  <data name="SignInConflictMessage" xml:space="preserve">
+    <value>Your account already has {0} habits in the cloud. This device has {1} habits.</value>
+  </data>
+  <data name="SignInConflictUseThisDevice" xml:space="preserve">
+    <value>Use this device</value>
+  </data>
+  <data name="SignInConflictKeepCloud" xml:space="preserve">
+    <value>Keep cloud data</value>
   </data>
   <data name="SignedOutToGuest" xml:space="preserve">
     <value>Signed out. Your habits are available offline on this device.</value>
@@ -156,9 +171,6 @@
   </data>
   <data name="LoginTagline" xml:space="preserve">
     <value>One tap. Habit done.</value>
-  </data>
-  <data name="GoogleSignInComingSoon" xml:space="preserve">
-    <value>Google Sign-In (coming soon)</value>
   </data>
   <data name="Theme" xml:space="preserve">
     <value>Theme</value>

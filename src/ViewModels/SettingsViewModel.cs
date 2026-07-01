@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using OneTapHabits.Messages;
 using OneTapHabits.Services;
 using OneTapHabits.Services.Widget;
 
@@ -96,6 +98,12 @@ public partial class SettingsViewModel : ObservableObject
 
 	public void RefreshChoices() => NotifyChoicePropertiesChanged();
 
+	public void RefreshAccountState()
+	{
+		NotifyAccountPropertiesChanged();
+		OnPropertyChanged(nameof(CanUseGoogleSignIn));
+	}
+
 	[RelayCommand]
 	private void SetEnglish()
 	{
@@ -143,23 +151,55 @@ public partial class SettingsViewModel : ObservableObject
 			AccountErrorMessage = null;
 			AccountMessage = null;
 			IsGoogleSignInBusy = true;
-			await _authService.SignInWithGoogleAsync();
+
+			var conflict = await _authService.SignInWithGoogleAsync();
+			var resolution = await ResolveSignInConflictAsync(conflict);
+			await _authService.CompleteSignInAsync(resolution);
 			await _widgetRefresh.RefreshAsync();
 			AccountMessage = _localization.Get("SyncSuccess");
 			NotifyAccountPropertiesChanged();
+			WeakReferenceMessenger.Default.Send(new AuthChangedMessage());
 		}
 		catch (OperationCanceledException)
 		{
-			// User dismissed the Google account picker.
+			await _authService.AbortSignInAsync();
 		}
 		catch (Exception ex)
 		{
+			await _authService.AbortSignInAsync();
 			AccountErrorMessage = UserFriendlyErrorMapper.FromException(ex, _localization);
 		}
 		finally
 		{
 			IsGoogleSignInBusy = false;
 		}
+	}
+
+	private async Task<SignInDataResolution> ResolveSignInConflictAsync(SignInConflictInfo conflict)
+	{
+		if (!conflict.NeedsUserChoice)
+		{
+			return conflict.AutoResolution
+				?? throw new InvalidOperationException("Sign-in conflict missing auto resolution.");
+		}
+
+		var page = Shell.Current?.CurrentPage
+			?? throw new InvalidOperationException("No page available for sign-in conflict dialog.");
+
+		var message = string.Format(
+			_localization.Get("SignInConflictMessage"),
+			conflict.CloudHabitCount,
+			conflict.LocalHabitCount);
+
+		var useThisDevice = await page.DisplayAlert(
+			_localization.Get("SignInConflictTitle"),
+			message,
+			_localization.Get("SignInConflictUseThisDevice"),
+			_localization.Get("SignInConflictKeepCloud"));
+
+		return useThisDevice
+			? SignInDataResolution.UseThisDevice
+			: SignInDataResolution.KeepCloud;
 	}
 
 	[RelayCommand]
@@ -173,6 +213,7 @@ public partial class SettingsViewModel : ObservableObject
 			await _widgetRefresh.RefreshAsync();
 			AccountMessage = _localization.Get("SignedOutToGuest");
 			NotifyAccountPropertiesChanged();
+			WeakReferenceMessenger.Default.Send(new AuthChangedMessage());
 		}
 		catch (Exception ex)
 		{

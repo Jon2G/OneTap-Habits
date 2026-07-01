@@ -2,6 +2,9 @@
 google-services.json
 **/google-services.json
 !google-services.json.example
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+!**/GoogleService-Info.plist.example
 *.keystore
 keystore_base64.txt
 
