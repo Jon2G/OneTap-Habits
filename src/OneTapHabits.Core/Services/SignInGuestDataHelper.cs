@@ -17,7 +17,7 @@ public static class SignInGuestDataHelper
 
 	public static bool HasMeaningfulGuestData(GuestDataSnapshot guest, IReadOnlySet<string> sampleHabitIds)
 	{
-		if (guest.Logs.Any(IsMeaningfulLog))
+		if (guest.Logs.Any(log => IsMeaningfulLog(log) && !sampleHabitIds.Contains(log.HabitId)))
 		{
 			return true;
 		}

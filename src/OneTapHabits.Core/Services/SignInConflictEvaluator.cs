@@ -16,32 +16,32 @@ public sealed class SignInConflictInfo
 
 	public int CloudHabitCount { get; init; }
 
+	public bool CloudHasData { get; init; }
+
 	public static SignInConflictInfo Evaluate(
 		bool meaningfulLocalData,
 		bool cloudHasData,
 		int localHabitCount,
 		int cloudHabitCount)
 	{
-		if (meaningfulLocalData && cloudHasData)
+		if (meaningfulLocalData)
 		{
 			return new SignInConflictInfo
 			{
 				NeedsUserChoice = true,
 				LocalHabitCount = localHabitCount,
-				CloudHabitCount = cloudHabitCount
+				CloudHabitCount = cloudHabitCount,
+				CloudHasData = cloudHasData
 			};
 		}
-
-		var resolution = meaningfulLocalData
-			? SignInDataResolution.UseThisDevice
-			: SignInDataResolution.KeepCloud;
 
 		return new SignInConflictInfo
 		{
 			NeedsUserChoice = false,
-			AutoResolution = resolution,
+			AutoResolution = SignInDataResolution.KeepCloud,
 			LocalHabitCount = localHabitCount,
-			CloudHabitCount = cloudHabitCount
+			CloudHabitCount = cloudHabitCount,
+			CloudHasData = cloudHasData
 		};
 	}
 }

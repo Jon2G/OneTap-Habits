@@ -1,4 +1,5 @@
-using OneTapHabits.Firestore;
+using OneTapHabits.Services;
+using OneTapHabits.Services.Firestore;
 using Plugin.Firebase.Firestore;
 
 namespace OneTapHabits.Services.Firestore;
@@ -10,28 +11,21 @@ public static class FirestoreCloudRepair
 		ICollectionReference logsCollection,
 		CancellationToken cancellationToken = default)
 	{
-		var habitsDeleted = await SanitizeCollectionAsync(
-			habitsCollection,
-			CloudDocumentSanitizer.ShouldDeleteHabitDocument,
-			cancellationToken);
-		var logsDeleted = await SanitizeCollectionAsync(
-			logsCollection,
-			(id, data) => CloudDocumentSanitizer.ShouldDeleteLogDocument(id, data),
-			cancellationToken);
+		var habitsDeleted = await SanitizeHabitsAsync(habitsCollection, cancellationToken);
+		var logsDeleted = await SanitizeLogsAsync(logsCollection, cancellationToken);
 		return (habitsDeleted, logsDeleted);
 	}
 
-	private static async Task<int> SanitizeCollectionAsync(
+	private static async Task<int> SanitizeHabitsAsync(
 		ICollectionReference collection,
-		Func<IReadOnlyDictionary<string, object>?, bool> shouldDelete,
 		CancellationToken cancellationToken)
 	{
 		var deleted = 0;
-		var snapshot = await collection.GetDocumentsAsync<Dictionary<string, object>>();
+		var snapshot = await collection.GetDocumentsAsync<HabitFirestoreDto>();
 		foreach (var document in snapshot.Documents)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			if (!shouldDelete(document.Data))
+			if (document.Data is not null && document.Data.IsValidCloudDocument())
 			{
 				continue;
 			}
@@ -43,17 +37,16 @@ public static class FirestoreCloudRepair
 		return deleted;
 	}
 
-	private static async Task<int> SanitizeCollectionAsync(
+	private static async Task<int> SanitizeLogsAsync(
 		ICollectionReference collection,
-		Func<string, IReadOnlyDictionary<string, object>?, bool> shouldDelete,
 		CancellationToken cancellationToken)
 	{
 		var deleted = 0;
-		var snapshot = await collection.GetDocumentsAsync<Dictionary<string, object>>();
+		var snapshot = await collection.GetDocumentsAsync<LogFirestoreDto>();
 		foreach (var document in snapshot.Documents)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			if (!shouldDelete(document.Reference.Id, document.Data))
+			if (document.Data is not null && CloudSnapshotFetcher.IsValidLogDocument(document.Reference.Id, document.Data))
 			{
 				continue;
 			}

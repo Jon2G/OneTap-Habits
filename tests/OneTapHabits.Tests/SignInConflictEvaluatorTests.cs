@@ -44,12 +44,23 @@ public class SignInGuestDataHelperTests
 	}
 
 	[Fact]
-	public void HasMeaningfulGuestData_IsTrue_WhenAnyLogExists()
+	public void HasMeaningfulGuestData_IsFalse_WhenOnlySampleHabitLogExists()
 	{
 		var guest = new GuestDataSnapshot
 		{
 			Habits = [new Habit { Id = "sample1", IsActive = true }],
 			Logs = [new GuestLogEntry { HabitId = "sample1", Date = "2026-06-30", Count = 1, IsCompleted = true }]
+		};
+		Assert.False(SignInGuestDataHelper.HasMeaningfulGuestData(guest, SampleIds));
+	}
+
+	[Fact]
+	public void HasMeaningfulGuestData_IsTrue_WhenLogOnCustomHabit()
+	{
+		var guest = new GuestDataSnapshot
+		{
+			Habits = [new Habit { Id = "custom", IsActive = true }],
+			Logs = [new GuestLogEntry { HabitId = "custom", Date = "2026-06-30", Count = 1, IsCompleted = true }]
 		};
 		Assert.True(SignInGuestDataHelper.HasMeaningfulGuestData(guest, SampleIds));
 	}
@@ -71,6 +82,7 @@ public class SignInConflictEvaluatorTests
 		var info = SignInConflictInfo.Evaluate(meaningfulLocalData: true, cloudHasData: true, 3, 5);
 		Assert.True(info.NeedsUserChoice);
 		Assert.Null(info.AutoResolution);
+		Assert.True(info.CloudHasData);
 		Assert.Equal(3, info.LocalHabitCount);
 		Assert.Equal(5, info.CloudHabitCount);
 	}
@@ -84,17 +96,47 @@ public class SignInConflictEvaluatorTests
 	}
 
 	[Fact]
-	public void Evaluate_AutoUseDevice_WhenMeaningfulLocalAndCloudEmpty()
+	public void Evaluate_NeedsUserChoice_WhenMeaningfulLocalAndCloudEmpty()
 	{
 		var info = SignInConflictInfo.Evaluate(meaningfulLocalData: true, cloudHasData: false, 2, 0);
-		Assert.False(info.NeedsUserChoice);
-		Assert.Equal(SignInDataResolution.UseThisDevice, info.AutoResolution);
+		Assert.True(info.NeedsUserChoice);
+		Assert.Null(info.AutoResolution);
+		Assert.False(info.CloudHasData);
 	}
 
 	[Fact]
 	public void Evaluate_AutoKeepCloud_WhenBothEmpty()
 	{
 		var info = SignInConflictInfo.Evaluate(meaningfulLocalData: false, cloudHasData: false, 0, 0);
+		Assert.False(info.NeedsUserChoice);
+		Assert.Equal(SignInDataResolution.KeepCloud, info.AutoResolution);
+	}
+
+	[Fact]
+	public void Evaluate_AutoKeepCloud_WhenFreshInstallSamplesWithSampleLogAndCloudHasData()
+	{
+		var guest = new GuestDataSnapshot
+		{
+			Habits =
+			[
+				new Habit { Id = "sample1", IsActive = true },
+				new Habit { Id = "sample2", IsActive = true }
+			],
+			Logs = [new GuestLogEntry { HabitId = "sample1", Date = "2026-06-30", Count = 1, IsCompleted = true }]
+		};
+		var sampleIds = SignInGuestDataHelper.ParseSampleHabitIds("sample1,sample2");
+		var cloudHabits = new List<Habit> { new() { Id = "real1", IsActive = true } };
+
+		var meaningfulLocal = SignInGuestDataHelper.HasMeaningfulGuestData(guest, sampleIds);
+		var cloudHasData = SignInGuestDataHelper.HasCloudData(cloudHabits, []);
+		var info = SignInConflictInfo.Evaluate(
+			meaningfulLocal,
+			cloudHasData,
+			SignInGuestDataHelper.CountLocalHabits(guest),
+			cloudHabits.Count);
+
+		Assert.False(meaningfulLocal);
+		Assert.True(cloudHasData);
 		Assert.False(info.NeedsUserChoice);
 		Assert.Equal(SignInDataResolution.KeepCloud, info.AutoResolution);
 	}

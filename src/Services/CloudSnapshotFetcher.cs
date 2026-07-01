@@ -26,12 +26,12 @@ public static class CloudSnapshotFetcher
 		CancellationToken cancellationToken = default)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
-		var logsSnapshot = await LogsCollection(firestore, userId).GetDocumentsAsync<Dictionary<string, object>>();
+		var logsSnapshot = await LogsCollection(firestore, userId).GetDocumentsAsync<LogFirestoreDto>();
 		return logsSnapshot.Documents
-			.Where(d => d.Data is not null && !CloudDocumentSanitizer.ShouldDeleteLogDocument(d.Reference.Id, d.Data))
+			.Where(d => d.Data is not null && IsValidLogDocument(d.Reference.Id, d.Data!))
 			.Select(d =>
 			{
-				var dto = MapLogDto(d.Data!);
+				var dto = d.Data!;
 				var habitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, dto.HabitId);
 				var date = HabitLogDocumentId.TryParse(d.Reference.Id, out var fromId, out _)
 					? fromId
@@ -51,34 +51,15 @@ public static class CloudSnapshotFetcher
 			.ToList();
 	}
 
-	private static LogFirestoreDto MapLogDto(IReadOnlyDictionary<string, object> data) => new()
+	internal static bool IsValidLogDocument(string documentId, LogFirestoreDto dto)
 	{
-		HabitId = GetString(data, CloudDocumentSanitizer.LogHabitIdField),
-		Date = GetString(data, "date"),
-		IsCompleted = GetBool(data, CloudDocumentSanitizer.LogIsCompletedField),
-		Count = GetInt(data, CloudDocumentSanitizer.LogCountField)
-	};
-
-	private static string GetString(IReadOnlyDictionary<string, object> data, string key) =>
-		data.TryGetValue(key, out var value) && value is not null ? value.ToString() ?? string.Empty : string.Empty;
-
-	private static bool GetBool(IReadOnlyDictionary<string, object> data, string key) =>
-		data.TryGetValue(key, out var value) && value is bool b && b;
-
-	private static int GetInt(IReadOnlyDictionary<string, object> data, string key)
-	{
-		if (!data.TryGetValue(key, out var value) || value is null)
+		if (dto.ResolveCount() <= 0)
 		{
-			return 0;
+			return false;
 		}
 
-		return value switch
-		{
-			int i => i,
-			long l => (int)l,
-			double d => (int)d,
-			_ => int.TryParse(value.ToString(), out var parsed) ? parsed : 0
-		};
+		var habitId = HabitLogDocumentId.ResolveHabitId(documentId, dto.HabitId);
+		return !string.IsNullOrEmpty(habitId);
 	}
 
 	private static ICollectionReference HabitsCollection(IFirebaseFirestore firestore, string userId) =>

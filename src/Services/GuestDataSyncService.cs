@@ -1,4 +1,3 @@
-using OneTapHabits.Firestore;
 using OneTapHabits.Models;
 using OneTapHabits.Services.Firestore;
 using Plugin.Firebase.Auth;
@@ -34,17 +33,6 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 	{
 		var userId = _auth.CurrentUser?.Uid
 			?? throw new InvalidOperationException("Must be signed in to evaluate sign-in conflict.");
-
-		var (habitsDeleted, logsDeleted) = await FirestoreCloudRepair.SanitizeCorruptDocumentsAsync(
-			HabitsCollection(userId),
-			LogsCollection(userId),
-			cancellationToken);
-		if (habitsDeleted > 0 || logsDeleted > 0)
-		{
-			_diagnosticLog.LogInfo(
-				"SignInSync",
-				$"Sanitized corrupt cloud docs user={MaskUserId(userId)} habitsDeleted={habitsDeleted} logsDeleted={logsDeleted}");
-		}
 
 		var guest = await _guestStore.LoadAsync(cancellationToken);
 		var sampleIds = SignInGuestDataHelper.ParseSampleHabitIds(

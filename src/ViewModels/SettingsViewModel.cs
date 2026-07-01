@@ -215,10 +215,14 @@ public partial class SettingsViewModel : ObservableObject
 			var page = ResolveDialogPage()
 				?? throw new InvalidOperationException("No page available for sign-in conflict dialog.");
 
-			var message = string.Format(
-				_localization.Get("SignInConflictMessage"),
-				conflict.CloudHabitCount,
-				conflict.LocalHabitCount);
+			var message = conflict.CloudHasData
+				? string.Format(
+					_localization.Get("SignInConflictMessage"),
+					conflict.CloudHabitCount,
+					conflict.LocalHabitCount)
+				: string.Format(
+					_localization.Get("SignInConflictMessageEmptyCloud"),
+					conflict.LocalHabitCount);
 
 			var useThisDevice = await page.DisplayAlert(
 				_localization.Get("SignInConflictTitle"),

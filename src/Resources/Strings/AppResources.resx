@@ -121,6 +121,9 @@
   <data name="SignInConflictMessage" xml:space="preserve">
     <value>Your account already has {0} habits in the cloud. This device has {1} habits.</value>
   </data>
+  <data name="SignInConflictMessageEmptyCloud" xml:space="preserve">
+    <value>This device has {0} habits. Your cloud account has no saved data. Upload habits from this device?</value>
+  </data>
   <data name="SignInConflictUseThisDevice" xml:space="preserve">
     <value>Use this device</value>
   </data>
