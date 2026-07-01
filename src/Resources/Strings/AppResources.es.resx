@@ -136,6 +136,24 @@
   <data name="SignOut" xml:space="preserve">
     <value>Cerrar sesión</value>
   </data>
+  <data name="RestoreCloudBackup" xml:space="preserve">
+    <value>Restaurar copia en la nube</value>
+  </data>
+  <data name="RestoreCloudBackupTitle" xml:space="preserve">
+    <value>¿Subir datos a la nube?</value>
+  </data>
+  <data name="RestoreCloudBackupMessage" xml:space="preserve">
+    <value>Esto sube todos los hábitos e historial guardados en este dispositivo a tu cuenta en la nube. Úsalo para recuperar datos tras una pérdida accidental en la nube.</value>
+  </data>
+  <data name="RestoreCloudBackupConfirm" xml:space="preserve">
+    <value>Subir</value>
+  </data>
+  <data name="RestoreCloudBackupCancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="RestoreCloudBackupSuccess" xml:space="preserve">
+    <value>Copia restaurada: {0} hábitos y {1} registros subidos.</value>
+  </data>
   <data name="Language" xml:space="preserve">
     <value>Idioma</value>
   </data>

@@ -7,123 +7,104 @@ namespace OneTapHabits.Tests;
 public class CloudCachePersistenceTests
 {
 	[Fact]
-	public void UpsertHabit_and_GetActiveHabits_round_trip()
+	public void HasUserCacheData_IsFalse_WhenEmpty()
 	{
-		var filePath = CreateCacheFilePath();
 		var file = new CloudCacheFile();
-		var habit = CreateHabit("habit-1");
-
-		CloudCachePersistence.UpsertHabit(file, "user-a", habit);
-		CloudCachePersistence.SaveToPath(filePath, file);
-
-		var loaded = CloudCachePersistence.LoadFromPath(filePath);
-		var habits = CloudCachePersistence.GetActiveHabits(loaded, "user-a");
-
-		Assert.Single(habits);
-		Assert.Equal("habit-1", habits[0].Id);
+		Assert.False(CloudCachePersistence.HasUserCacheData(file, "user1"));
 	}
 
 	[Fact]
-	public void IncrementCount_persists_and_returns_next_value()
+	public void HasUserCacheData_IsTrue_WhenHabitsPresent()
 	{
-		var filePath = CreateCacheFilePath();
 		var file = new CloudCacheFile();
-		var date = new DateOnly(2026, 6, 28);
-
-		Assert.Equal(1, CloudCachePersistence.IncrementCount(file, "user-a", "habit-1", date));
-		Assert.Equal(2, CloudCachePersistence.IncrementCount(file, "user-a", "habit-1", date));
-		CloudCachePersistence.SaveToPath(filePath, file);
-
-		var loaded = CloudCachePersistence.LoadFromPath(filePath);
-		Assert.Equal(2, CloudCachePersistence.GetCount(loaded, "user-a", "habit-1", date));
+		CloudCachePersistence.SaveUserSnapshot(file, "user1", new GuestDataSnapshot
+		{
+			Habits = [new Habit { Id = "h1", IsActive = true }]
+		});
+		Assert.True(CloudCachePersistence.HasUserCacheData(file, "user1"));
 	}
 
 	[Fact]
-	public void GetCountMapForDate_returns_counts_for_user_and_date_only()
+	public void HasUserCacheData_IsTrue_WhenLogsPresent()
 	{
 		var file = new CloudCacheFile();
-		var date = new DateOnly(2026, 6, 28);
-		var otherDate = new DateOnly(2026, 6, 27);
-
-		CloudCachePersistence.IncrementCount(file, "user-a", "habit-1", date);
-		CloudCachePersistence.IncrementCount(file, "user-a", "habit-1", date);
-		CloudCachePersistence.IncrementCount(file, "user-a", "habit-2", date);
-		CloudCachePersistence.IncrementCount(file, "user-b", "habit-1", date);
-		CloudCachePersistence.IncrementCount(file, "user-a", "habit-1", otherDate);
-
-		var map = CloudCachePersistence.GetCountMapForDate(file, "user-a", date);
-
-		Assert.Equal(2, map.Count);
-		Assert.Equal(2, map["habit-1"]);
-		Assert.Equal(1, map["habit-2"]);
+		CloudCachePersistence.SaveUserSnapshot(file, "user1", new GuestDataSnapshot
+		{
+			Logs = [new GuestLogEntry { HabitId = "h1", Date = "2026-06-30", Count = 1, IsCompleted = true }]
+		});
+		Assert.True(CloudCachePersistence.HasUserCacheData(file, "user1"));
 	}
 
 	[Fact]
-	public void ClearUser_removes_only_matching_user_data()
+	public void MergeFromCloud_PreservesLocalHabits_WhenCloudHabitsEmpty()
 	{
 		var file = new CloudCacheFile();
-		var date = new DateOnly(2026, 6, 28);
-
-		CloudCachePersistence.IncrementCount(file, "user-a", "habit-1", date);
-		CloudCachePersistence.IncrementCount(file, "user-b", "habit-1", date);
-
-		CloudCachePersistence.ClearUser(file, "user-a");
-
-		Assert.Equal(0, CloudCachePersistence.GetCount(file, "user-a", "habit-1", date));
-		Assert.Equal(1, CloudCachePersistence.GetCount(file, "user-b", "habit-1", date));
-	}
-
-	[Fact]
-	public void MergeFromCloud_keeps_higher_local_log_count()
-	{
-		var file = new CloudCacheFile();
-		var date = new DateOnly(2026, 6, 28);
-		CloudCachePersistence.SetCount(file, "user-a", "habit-1", date, 3);
-
-		var changed = CloudCachePersistence.MergeFromCloud(
-			file,
-			"user-a",
-			[CreateHabit("habit-1")],
+		CloudCachePersistence.SaveUserSnapshot(file, "user1", new GuestDataSnapshot
+		{
+			Habits =
 			[
-				new GuestLogEntry
-				{
-					HabitId = "habit-1",
-					Date = date.ToString("yyyy-MM-dd"),
-					IsCompleted = true,
-					Count = 2
-				}
-			]);
+				new Habit { Id = "local1", Name = "Gym", IsActive = true, SortOrder = 0 }
+			]
+		});
+
+		var changed = CloudCachePersistence.MergeFromCloud(file, "user1", [], []);
+
+		Assert.False(changed);
+		var snapshot = CloudCachePersistence.GetUserSnapshot(file, "user1");
+		Assert.Single(snapshot.Habits);
+		Assert.Equal("local1", snapshot.Habits[0].Id);
+	}
+
+	[Fact]
+	public void MergeFromCloud_ReplacesLocalHabits_WhenCloudHasData()
+	{
+		var file = new CloudCacheFile();
+		CloudCachePersistence.SaveUserSnapshot(file, "user1", new GuestDataSnapshot
+		{
+			Habits = [new Habit { Id = "local1", Name = "Old", IsActive = true }]
+		});
+
+		var cloudHabits = new List<Habit> { new() { Id = "cloud1", Name = "New", IsActive = true } };
+		var changed = CloudCachePersistence.MergeFromCloud(file, "user1", cloudHabits, []);
 
 		Assert.True(changed);
-		Assert.Equal(3, CloudCachePersistence.GetCount(file, "user-a", "habit-1", date));
+		var snapshot = CloudCachePersistence.GetUserSnapshot(file, "user1");
+		Assert.Single(snapshot.Habits);
+		Assert.Equal("cloud1", snapshot.Habits[0].Id);
 	}
 
 	[Fact]
-	public void SetCount_zero_removes_log_entry()
+	public void MergeFromCloud_AppliesCloudHabits_WhenLocalEmpty()
 	{
 		var file = new CloudCacheFile();
-		var date = new DateOnly(2026, 6, 28);
+		var cloudHabits = new List<Habit> { new() { Id = "cloud1", Name = "Run", IsActive = true } };
 
-		CloudCachePersistence.IncrementCount(file, "user-a", "habit-1", date);
-		CloudCachePersistence.SetCount(file, "user-a", "habit-1", date, 0);
+		var changed = CloudCachePersistence.MergeFromCloud(file, "user1", cloudHabits, []);
 
-		Assert.Equal(0, CloudCachePersistence.GetCount(file, "user-a", "habit-1", date));
-		Assert.Empty(CloudCachePersistence.GetUserSnapshot(file, "user-a").Logs);
+		Assert.True(changed);
+		var snapshot = CloudCachePersistence.GetUserSnapshot(file, "user1");
+		Assert.Equal("cloud1", snapshot.Habits[0].Id);
 	}
 
-	private static Habit CreateHabit(string id) => new()
+	[Fact]
+	public void MergeFromCloud_MergesLogsWithoutRemovingLocal()
 	{
-		Id = id,
-		Name = "Test",
-		ColorHex = "#FF5722",
-		IsActive = true,
-		SortOrder = 0
-	};
+		var file = new CloudCacheFile();
+		CloudCachePersistence.SaveUserSnapshot(file, "user1", new GuestDataSnapshot
+		{
+			Habits = [new Habit { Id = "h1", IsActive = true }],
+			Logs = [new GuestLogEntry { HabitId = "h1", Date = "2026-06-28", Count = 2, IsCompleted = true }]
+		});
 
-	private static string CreateCacheFilePath()
-	{
-		var dir = Path.Combine(Path.GetTempPath(), "onetaphabits-cloud-cache-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(dir);
-		return CloudCachePersistence.GetFilePath(dir);
+		var cloudLogs = new List<GuestLogEntry>
+		{
+			new() { HabitId = "h1", Date = "2026-06-28", Count = 5, IsCompleted = true }
+		};
+
+		CloudCachePersistence.MergeFromCloud(file, "user1", [], cloudLogs);
+
+		var snapshot = CloudCachePersistence.GetUserSnapshot(file, "user1");
+		Assert.Equal(5, snapshot.Logs.Single(l => l.Date == "2026-06-28").Count);
+		Assert.Single(snapshot.Habits);
 	}
 }

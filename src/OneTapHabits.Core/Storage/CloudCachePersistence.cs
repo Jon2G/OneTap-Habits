@@ -98,6 +98,12 @@ public static class CloudCachePersistence
 		DateOnly endInclusive) =>
 		GuestLogQuery.FilterCompletedInRange(GetUserSnapshot(file, userId), startInclusive, endInclusive);
 
+	public static bool HasUserCacheData(CloudCacheFile file, string userId)
+	{
+		var snapshot = GetUserSnapshot(file, userId);
+		return snapshot.Habits.Any(h => h.IsActive) || snapshot.Logs.Any(l => l.Count > 0);
+	}
+
 	public static bool MergeFromCloud(
 		CloudCacheFile file,
 		string userId,
@@ -105,8 +111,12 @@ public static class CloudCachePersistence
 		IReadOnlyList<GuestLogEntry> cloudLogs)
 	{
 		var user = FindOrCreateUser(file, userId);
-		var habitsChanged = !HabitListsEqual(user.Habits, cloudHabits);
-		user.Habits = cloudHabits.ToList();
+		var habitsChanged = false;
+		if (cloudHabits.Count > 0 || user.Habits.Count == 0)
+		{
+			habitsChanged = !HabitListsEqual(user.Habits, cloudHabits);
+			user.Habits = cloudHabits.ToList();
+		}
 
 		var logsChanged = MergeLogs(user, cloudLogs);
 		return habitsChanged || logsChanged;

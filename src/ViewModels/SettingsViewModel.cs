@@ -19,6 +19,7 @@ public partial class SettingsViewModel : ObservableObject
 	private readonly IWidgetAppearanceService _widgetAppearance;
 	private readonly UpdateCoordinator _updateCoordinator;
 	private readonly IDiagnosticLogService _diagnosticLog;
+	private readonly ICloudRestoreService _cloudRestore;
 
 	[ObservableProperty]
 	private string? accountMessage;
@@ -29,6 +30,9 @@ public partial class SettingsViewModel : ObservableObject
 	[ObservableProperty]
 	private bool isGoogleSignInBusy;
 
+	[ObservableProperty]
+	private bool isRestoreCloudBusy;
+
 	public SettingsViewModel(
 		IAuthService authService,
 		ILocalizationService localization,
@@ -36,7 +40,8 @@ public partial class SettingsViewModel : ObservableObject
 		IThemeService themeService,
 		IWidgetAppearanceService widgetAppearance,
 		UpdateCoordinator updateCoordinator,
-		IDiagnosticLogService diagnosticLog)
+		IDiagnosticLogService diagnosticLog,
+		ICloudRestoreService cloudRestore)
 	{
 		_authService = authService;
 		_localization = localization;
@@ -45,6 +50,7 @@ public partial class SettingsViewModel : ObservableObject
 		_widgetAppearance = widgetAppearance;
 		_updateCoordinator = updateCoordinator;
 		_diagnosticLog = diagnosticLog;
+		_cloudRestore = cloudRestore;
 	}
 
 	public INavigation? Navigation { get; set; }
@@ -71,6 +77,7 @@ public partial class SettingsViewModel : ObservableObject
 	public string LicenseLabel => _localization.Get("MitLicense");
 	public string CheckForUpdatesLabel => _localization.Get("CheckForUpdates");
 	public string ExportDiagnosticLogsLabel => _localization.Get("ExportDiagnosticLogs");
+	public string RestoreCloudBackupLabel => _localization.Get("RestoreCloudBackup");
 	public bool IsCheckForUpdatesSupported => DeviceInfo.Platform == DevicePlatform.Android;
 	public string WidgetSectionTitle => _localization.Get("WidgetSection");
 	public string WidgetTintLabel => _localization.Get("WidgetTintLabel");
@@ -83,6 +90,7 @@ public partial class SettingsViewModel : ObservableObject
 	public bool IsSignedIn => _authService.IsSignedIn;
 	public bool IsGoogleSignInSupported => DeviceInfo.Platform == DevicePlatform.Android;
 	public bool CanUseGoogleSignIn => IsGoogleSignInSupported && !IsGoogleSignInBusy;
+	public bool CanRestoreCloudBackup => IsSignedIn && !IsRestoreCloudBusy;
 	public bool HasAccountError => !string.IsNullOrWhiteSpace(AccountErrorMessage);
 	public string? SignedInEmail => _authService.UserEmail;
 
@@ -99,6 +107,9 @@ public partial class SettingsViewModel : ObservableObject
 	{
 		OnPropertyChanged(nameof(CanUseGoogleSignIn));
 	}
+
+	partial void OnIsRestoreCloudBusyChanged(bool value) =>
+		OnPropertyChanged(nameof(CanRestoreCloudBackup));
 
 	partial void OnAccountErrorMessageChanged(string? value) => OnPropertyChanged(nameof(HasAccountError));
 
@@ -252,6 +263,59 @@ public partial class SettingsViewModel : ObservableObject
 	}
 
 	[RelayCommand]
+	private async Task RestoreCloudBackupAsync()
+	{
+		if (IsRestoreCloudBusy || !IsSignedIn)
+		{
+			return;
+		}
+
+		var page = ResolveDialogPage();
+		if (page is null)
+		{
+			return;
+		}
+
+		var confirmed = await MainThread.InvokeOnMainThreadAsync(() =>
+			page.DisplayAlert(
+				_localization.Get("RestoreCloudBackupTitle"),
+				_localization.Get("RestoreCloudBackupMessage"),
+				_localization.Get("RestoreCloudBackupConfirm"),
+				_localization.Get("RestoreCloudBackupCancel")));
+
+		if (!confirmed)
+		{
+			return;
+		}
+
+		try
+		{
+			AccountErrorMessage = null;
+			AccountMessage = null;
+			IsRestoreCloudBusy = true;
+			_diagnosticLog.LogInfo("CloudRestore", "Restore cloud backup requested from Settings.");
+
+			var result = await _cloudRestore.UploadLocalCacheToCloudAsync();
+			AccountMessage = string.Format(
+				_localization.Get("RestoreCloudBackupSuccess"),
+				result.HabitsUploaded,
+				result.LogsUploaded);
+			_diagnosticLog.LogInfo(
+				"CloudRestore",
+				$"Settings restore succeeded habits={result.HabitsUploaded} logs={result.LogsUploaded}.");
+		}
+		catch (Exception ex)
+		{
+			_diagnosticLog.LogError("CloudRestore", ex, "Settings restore failed.");
+			AccountErrorMessage = UserFriendlyErrorMapper.FromException(ex, _localization);
+		}
+		finally
+		{
+			IsRestoreCloudBusy = false;
+		}
+	}
+
+	[RelayCommand]
 	private async Task SignOutAsync()
 	{
 		try
@@ -357,6 +421,7 @@ public partial class SettingsViewModel : ObservableObject
 		OnPropertyChanged(nameof(IsGuest));
 		OnPropertyChanged(nameof(IsSignedIn));
 		OnPropertyChanged(nameof(SignedInEmail));
+		OnPropertyChanged(nameof(CanRestoreCloudBackup));
 	}
 
 	private void NotifyLocalizedPropertiesChanged()
@@ -381,6 +446,7 @@ public partial class SettingsViewModel : ObservableObject
 		OnPropertyChanged(nameof(LicenseLabel));
 		OnPropertyChanged(nameof(CheckForUpdatesLabel));
 		OnPropertyChanged(nameof(ExportDiagnosticLogsLabel));
+		OnPropertyChanged(nameof(RestoreCloudBackupLabel));
 		OnPropertyChanged(nameof(WidgetSectionTitle));
 		OnPropertyChanged(nameof(WidgetTintLabel));
 		OnPropertyChanged(nameof(WidgetTintSubtleLabel));

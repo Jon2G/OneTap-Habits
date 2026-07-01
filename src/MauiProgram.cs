@@ -39,6 +39,8 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ILocalGuestStore, LocalGuestStore>();
 		builder.Services.AddSingleton<ILocalCloudStore, LocalCloudStore>();
 		builder.Services.AddSingleton<ICloudSyncService, CloudSyncService>();
+		builder.Services.AddSingleton<ILocalCloudStoreMigrationService, LocalCloudStoreMigrationService>();
+		builder.Services.AddSingleton<ICloudRestoreService, CloudRestoreService>();
 		builder.Services.AddSingleton<IGuestDataSyncService, GuestDataSyncService>();
 		builder.Services.AddSingleton<IFirstLaunchSeedService, FirstLaunchSeedService>();
 		builder.Services.AddSingleton<IHabitService, HabitService>();

@@ -136,6 +136,24 @@
   <data name="SignOut" xml:space="preserve">
     <value>Sign out</value>
   </data>
+  <data name="RestoreCloudBackup" xml:space="preserve">
+    <value>Restore cloud backup</value>
+  </data>
+  <data name="RestoreCloudBackupTitle" xml:space="preserve">
+    <value>Upload data to cloud?</value>
+  </data>
+  <data name="RestoreCloudBackupMessage" xml:space="preserve">
+    <value>This uploads all habits and history stored on this device to your cloud account. Use this to recover after accidental cloud data loss.</value>
+  </data>
+  <data name="RestoreCloudBackupConfirm" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="RestoreCloudBackupCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="RestoreCloudBackupSuccess" xml:space="preserve">
+    <value>Cloud backup restored: {0} habits and {1} log entries uploaded.</value>
+  </data>
   <data name="Language" xml:space="preserve">
     <value>Language</value>
   </data>

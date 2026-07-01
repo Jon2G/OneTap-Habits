@@ -46,11 +46,26 @@
                 </Border>
             </VerticalStackLayout>
 
-            <Button Text="{Binding SignOutLabel}"
+			<Button Text="{Binding SignOutLabel}"
                     Command="{Binding SignOutCommand}"
                     IsVisible="{Binding IsSignedIn}"
                     BackgroundColor="{AppThemeBinding Light={StaticResource Error}, Dark={StaticResource ErrorDark}}"
                     TextColor="{StaticResource White}" />
+
+            <Button Text="{Binding RestoreCloudBackupLabel}"
+                    Command="{Binding RestoreCloudBackupCommand}"
+                    IsVisible="{Binding IsSignedIn}"
+                    IsEnabled="{Binding CanRestoreCloudBackup}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource AccentComplete}, Dark={StaticResource AccentCompleteDark}}"
+                    BorderWidth="0"
+                    Padding="0"
+                    HorizontalOptions="Start" />
+
+            <ActivityIndicator IsRunning="{Binding IsRestoreCloudBusy}"
+                               IsVisible="{Binding IsRestoreCloudBusy}"
+                               Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                               HorizontalOptions="Start" />
 
             <Label Text="{Binding AccountMessage}"
                    FontSize="13"
