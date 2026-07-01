@@ -83,7 +83,7 @@ public class CalendarMonthBuilderTests
 	}
 
 	[Fact]
-	public void Build_marks_overflow_when_more_than_four_habits()
+	public void Build_includes_all_completion_lines_when_many_habits()
 	{
 		var habits = Enumerable.Range(1, 5).Select(i => new Habit
 		{
@@ -105,8 +105,6 @@ public class CalendarMonthBuilderTests
 		var day = FindDay(grid, date);
 
 		Assert.Equal(5, day.CompletionLines.Count);
-		Assert.Equal(1, day.OverflowCount);
-		Assert.Equal(4, day.VisibleLines.Count);
 	}
 
 	[Fact]

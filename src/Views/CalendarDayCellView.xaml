@@ -5,7 +5,7 @@
         xmlns:views="clr-namespace:OneTapHabits.Views"
         x:Class="OneTapHabits.Views.CalendarDayCellView"
         x:DataType="vm:CalendarDayDisplay"
-        Padding="2"
+        Padding="0"
         StrokeThickness="1"
         Stroke="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}">
     <Border.Triggers>
@@ -17,39 +17,33 @@
         <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type views:CalendarPage}}, Path=BindingContext.OpenDayCommand}"
                               CommandParameter="{Binding .}" />
     </Border.GestureRecognizers>
-    <Grid RowDefinitions="Auto,*" RowSpacing="2">
+    <Grid>
+        <FlexLayout Direction="Column"
+                    IsVisible="{Binding HasLines}"
+                    BindableLayout.ItemsSource="{Binding Lines}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="vm:CalendarLineDisplay">
+                    <BoxView Color="{Binding LineColor}" FlexLayout.Grow="1" />
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </FlexLayout>
         <Label Text="{Binding DayNumber}"
-               FontSize="12"
-               HorizontalTextAlignment="Center"
+               FontSize="18"
+               FontAttributes="Bold"
+               HorizontalOptions="Center"
+               VerticalOptions="Center"
                TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}">
             <Label.Triggers>
-                <DataTrigger TargetType="Label" Binding="{Binding IsToday}" Value="True">
-                    <Setter Property="FontAttributes" Value="Bold" />
+                <DataTrigger TargetType="Label" Binding="{Binding HasLines}" Value="True">
+                    <Setter Property="TextColor" Value="White" />
+                    <Setter Property="Shadow">
+                        <Shadow Brush="Black" Offset="0,1" Radius="2" Opacity="0.55" />
+                    </Setter>
                 </DataTrigger>
                 <DataTrigger TargetType="Label" Binding="{Binding IsCurrentMonth}" Value="False">
                     <Setter Property="Opacity" Value="0.35" />
                 </DataTrigger>
             </Label.Triggers>
         </Label>
-        <HorizontalStackLayout Grid.Row="1"
-                               HorizontalOptions="Center"
-                               VerticalOptions="End"
-                               Spacing="2">
-            <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Lines}" Spacing="2">
-                <BindableLayout.ItemTemplate>
-                    <DataTemplate x:DataType="vm:CalendarLineDisplay">
-                        <BoxView Color="{Binding LineColor}"
-                                 WidthRequest="3"
-                                 HeightRequest="14"
-                                 CornerRadius="1" />
-                    </DataTemplate>
-                </BindableLayout.ItemTemplate>
-            </HorizontalStackLayout>
-            <Label Text="{Binding OverflowText}"
-                   IsVisible="{Binding HasOverflow}"
-                   FontSize="9"
-                   VerticalOptions="End"
-                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
-        </HorizontalStackLayout>
     </Grid>
 </Border>

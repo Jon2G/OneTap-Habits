@@ -63,20 +63,22 @@
         <Grid Grid.Row="2"
               ColumnDefinitions="*,*,*,*,*,*,*"
               ColumnSpacing="4"
-              Margin="0,4,0,0">
-            <Label Grid.Column="0" Text="{Binding WeekdayHeaders[0]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+              Margin="0,4,0,0"
+              HeightRequest="20"
+              VerticalOptions="End">
+            <Label Grid.Column="0" Text="{Binding WeekdayMon}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
-            <Label Grid.Column="1" Text="{Binding WeekdayHeaders[1]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+            <Label Grid.Column="1" Text="{Binding WeekdayTue}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
-            <Label Grid.Column="2" Text="{Binding WeekdayHeaders[2]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+            <Label Grid.Column="2" Text="{Binding WeekdayWed}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
-            <Label Grid.Column="3" Text="{Binding WeekdayHeaders[3]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+            <Label Grid.Column="3" Text="{Binding WeekdayThu}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
-            <Label Grid.Column="4" Text="{Binding WeekdayHeaders[4]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+            <Label Grid.Column="4" Text="{Binding WeekdayFri}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
-            <Label Grid.Column="5" Text="{Binding WeekdayHeaders[5]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+            <Label Grid.Column="5" Text="{Binding WeekdaySat}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
-            <Label Grid.Column="6" Text="{Binding WeekdayHeaders[6]}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
+            <Label Grid.Column="6" Text="{Binding WeekdaySun}" HorizontalTextAlignment="Center" FontSize="12" FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
         </Grid>
 
@@ -90,7 +92,7 @@
                     </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="vm:CalendarWeekRow">
-                            <Grid ColumnDefinitions="*,*,*,*,*,*,*" ColumnSpacing="4" HeightRequest="52">
+                            <Grid ColumnDefinitions="*,*,*,*,*,*,*" ColumnSpacing="4" HeightRequest="68">
                                 <views:CalendarDayCellView Grid.Column="0" BindingContext="{Binding Day0}" />
                                 <views:CalendarDayCellView Grid.Column="1" BindingContext="{Binding Day1}" />
                                 <views:CalendarDayCellView Grid.Column="2" BindingContext="{Binding Day2}" />

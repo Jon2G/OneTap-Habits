@@ -16,11 +16,6 @@ public sealed class CalendarDayCell
 	public bool IsToday { get; init; }
 
 	public IReadOnlyList<CalendarCompletionLine> CompletionLines { get; init; } = [];
-
-	public int OverflowCount { get; init; }
-
-	public IReadOnlyList<CalendarCompletionLine> VisibleLines =>
-		OverflowCount > 0 ? CompletionLines.Take(4).ToList() : CompletionLines;
 }
 
 public sealed class CalendarWeek

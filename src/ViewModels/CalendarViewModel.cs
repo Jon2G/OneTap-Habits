@@ -28,7 +28,27 @@ public partial class CalendarViewModel : ObservableObject
 
 	public ObservableCollection<CalendarWeekRow> Weeks { get; } = [];
 	public ObservableCollection<HabitFilterOption> HabitFilterOptions { get; } = [];
-	public ObservableCollection<string> WeekdayHeaders { get; } = [];
+
+	[ObservableProperty]
+	private string weekdayMon = string.Empty;
+
+	[ObservableProperty]
+	private string weekdayTue = string.Empty;
+
+	[ObservableProperty]
+	private string weekdayWed = string.Empty;
+
+	[ObservableProperty]
+	private string weekdayThu = string.Empty;
+
+	[ObservableProperty]
+	private string weekdayFri = string.Empty;
+
+	[ObservableProperty]
+	private string weekdaySat = string.Empty;
+
+	[ObservableProperty]
+	private string weekdaySun = string.Empty;
 
 	public CalendarViewModel(
 		IHabitService habitService,
@@ -41,6 +61,7 @@ public partial class CalendarViewModel : ObservableObject
 
 		var today = DateOnly.FromDateTime(DateTime.Today);
 		displayedMonth = new DateOnly(today.Year, today.Month, 1);
+		RebuildWeekdayHeaders();
 	}
 
 	public string Title => _localization.Get("CalendarTitle");
@@ -161,14 +182,13 @@ public partial class CalendarViewModel : ObservableObject
 
 	private void RebuildWeekdayHeaders()
 	{
-		WeekdayHeaders.Clear();
-		WeekdayHeaders.Add(_localization.Get("DayMonShort"));
-		WeekdayHeaders.Add(_localization.Get("DayTueShort"));
-		WeekdayHeaders.Add(_localization.Get("DayWedShort"));
-		WeekdayHeaders.Add(_localization.Get("DayThuShort"));
-		WeekdayHeaders.Add(_localization.Get("DayFriShort"));
-		WeekdayHeaders.Add(_localization.Get("DaySatShort"));
-		WeekdayHeaders.Add(_localization.Get("DaySunShort"));
+		WeekdayMon = _localization.Get("DayMonShort");
+		WeekdayTue = _localization.Get("DayTueShort");
+		WeekdayWed = _localization.Get("DayWedShort");
+		WeekdayThu = _localization.Get("DayThuShort");
+		WeekdayFri = _localization.Get("DayFriShort");
+		WeekdaySat = _localization.Get("DaySatShort");
+		WeekdaySun = _localization.Get("DaySunShort");
 	}
 
 	private void RebuildFilterOptions(IReadOnlyList<Models.Habit> habits)
@@ -239,13 +259,13 @@ public sealed class CalendarDayDisplay
 	public bool IsToday { get; init; }
 	public bool IsFuture { get; init; }
 	public bool CanOpen { get; init; }
-	public bool HasOverflow { get; init; }
-	public string OverflowText { get; init; } = string.Empty;
+	public bool HasLines { get; init; }
 	public IReadOnlyList<CalendarLineDisplay> Lines { get; init; } = [];
 
 	public static CalendarDayDisplay FromCell(CalendarDayCell cell)
 	{
 		var today = DateOnly.FromDateTime(DateTime.Today);
+		var lines = cell.CompletionLines.Select(l => new CalendarLineDisplay(l.ColorHex)).ToList();
 		return new()
 		{
 			Date = cell.Date,
@@ -254,9 +274,8 @@ public sealed class CalendarDayDisplay
 			IsToday = cell.IsToday,
 			IsFuture = cell.Date > today,
 			CanOpen = cell.IsCurrentMonth && cell.Date <= today,
-			Lines = cell.VisibleLines.Select(l => new CalendarLineDisplay(l.ColorHex)).ToList(),
-			HasOverflow = cell.OverflowCount > 0,
-			OverflowText = $"+{cell.OverflowCount}"
+			Lines = lines,
+			HasLines = lines.Count > 0
 		};
 	}
 }

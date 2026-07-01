@@ -5,8 +5,6 @@ namespace OneTapHabits.Calendar;
 
 public static class CalendarMonthBuilder
 {
-	private const int MaxVisibleLines = 4;
-
 	public static CalendarMonthGrid Build(
 		DateOnly month,
 		IReadOnlyList<Habit> habits,
@@ -39,15 +37,13 @@ public static class CalendarMonthBuilder
 			{
 				var date = cursor.AddDays(i);
 				var lines = BuildLinesForDate(date, habitMap, logsByDate, today);
-				var overflow = Math.Max(0, lines.Count - MaxVisibleLines);
 
 				days.Add(new CalendarDayCell
 				{
 					Date = date,
 					IsCurrentMonth = date.Month == monthStart.Month && date.Year == monthStart.Year,
 					IsToday = date == today,
-					CompletionLines = lines,
-					OverflowCount = overflow
+					CompletionLines = lines
 				});
 			}
 
