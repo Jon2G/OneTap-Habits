@@ -1,5 +1,4 @@
 using OneTapHabits.Calendar;
-using OneTapHabits.Firestore;
 using OneTapHabits.Models;
 using OneTapHabits.Services.Firestore;
 using Plugin.Firebase.Auth;
@@ -13,17 +12,20 @@ public sealed class LogService : ILogService
 	private readonly IFirebaseAuth _firebaseAuth;
 	private readonly IFirebaseFirestore _firestore;
 	private readonly ILocalGuestStore _guestStore;
+	private readonly ILocalLogOverlayStore _logOverlay;
 
 	public LogService(
 		IAuthService auth,
 		IFirebaseAuth firebaseAuth,
 		IFirebaseFirestore firestore,
-		ILocalGuestStore guestStore)
+		ILocalGuestStore guestStore,
+		ILocalLogOverlayStore logOverlay)
 	{
 		_auth = auth;
 		_firebaseAuth = firebaseAuth;
 		_firestore = firestore;
 		_guestStore = guestStore;
+		_logOverlay = logOverlay;
 	}
 
 	public async Task<HabitLog?> GetLogAsync(string habitId, DateOnly date)
@@ -41,39 +43,67 @@ public sealed class LogService : ILogService
 			return ToLog(habitId, date, entry.IsCompleted, entry.Count);
 		}
 
-		var id = HabitLog.CreateId(date, habitId);
-		var snapshot = await CloudLogsCollection().GetDocument(id).GetDocumentSnapshotAsync<LogFirestoreDto>();
-		if (snapshot.Data is null || snapshot.Data.ResolveCount() <= 0)
+		var count = await GetMergedCountAsync(habitId, date);
+		if (count <= 0)
 		{
 			return null;
 		}
 
-		return snapshot.Data.ToModel(id, habitId, date);
+		var id = HabitLog.CreateId(date, habitId);
+		return ToLog(habitId, date, true, count);
 	}
 
 	public async Task<int> GetCountAsync(string habitId, DateOnly date)
 	{
-		var log = await GetLogAsync(habitId, date);
-		return log?.Count ?? 0;
+		if (_auth.IsGuest)
+		{
+			var guest = await _guestStore.LoadAsync();
+			var dateKey = date.ToString("yyyy-MM-dd");
+			var entry = guest.Logs.FirstOrDefault(l => l.HabitId == habitId && l.Date == dateKey);
+			return entry?.Count ?? 0;
+		}
+
+		return await GetMergedCountAsync(habitId, date);
 	}
 
 	public async Task<int> IncrementCountAsync(string habitId, DateOnly date)
 	{
-		var current = await GetCountAsync(habitId, date);
-		var next = current + 1;
-		await UpsertCountAsync(habitId, date, next);
-		return next;
+		if (_auth.IsGuest)
+		{
+			var guest = await _guestStore.LoadAsync();
+			var dateKey = date.ToString("yyyy-MM-dd");
+			var current = guest.Logs.FirstOrDefault(l => l.HabitId == habitId && l.Date == dateKey)?.Count ?? 0;
+			var next = current + 1;
+			await UpsertGuestCountAsync(guest, habitId, dateKey, next);
+			return next;
+		}
+
+		var userId = RequireUserId();
+		var nextCount = await _logOverlay.IncrementCountAsync(userId, habitId, date);
+		QueueCloudUpsert(habitId, date, nextCount);
+		return nextCount;
 	}
 
 	public async Task SetCompletedAsync(string habitId, DateOnly date, bool isCompleted)
 	{
-		if (isCompleted)
+		if (_auth.IsGuest)
 		{
-			await UpsertCountAsync(habitId, date, 1);
+			var guest = await _guestStore.LoadAsync();
+			var dateKey = date.ToString("yyyy-MM-dd");
+			await UpsertGuestCountAsync(guest, habitId, dateKey, isCompleted ? 1 : 0);
 			return;
 		}
 
-		await UpsertCountAsync(habitId, date, 0);
+		var userId = RequireUserId();
+		if (isCompleted)
+		{
+			await _logOverlay.SetCountAsync(userId, habitId, date, 1);
+			QueueCloudUpsert(habitId, date, 1);
+			return;
+		}
+
+		await _logOverlay.SetCountAsync(userId, habitId, date, 0);
+		QueueCloudDelete(habitId, date);
 	}
 
 	public async Task<IReadOnlyDictionary<string, bool>> GetCompletionMapForDateAsync(DateOnly date)
@@ -94,23 +124,10 @@ public sealed class LogService : ILogService
 				.ToDictionary(g => g.Key, g => g.Max(l => l.Count));
 		}
 
-		var prefix = date.ToString("yyyy-MM-dd");
-		var snapshot = await CloudLogsCollection().GetDocumentsAsync<Dictionary<string, object>>();
-		return snapshot.Documents
-			.Where(d => d.Data is not null && d.Reference.Id.StartsWith(prefix, StringComparison.Ordinal))
-			.Where(d => !CloudDocumentSanitizer.ShouldDeleteLogDocument(d.Reference.Id, d.Data))
-			.Select(d =>
-			{
-				var dto = MapLogDto(d.Data!);
-				return new
-				{
-					HabitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, dto.HabitId),
-					Count = dto.ResolveCount()
-				};
-			})
-			.Where(x => !string.IsNullOrEmpty(x.HabitId) && x.Count > 0)
-			.GroupBy(x => x.HabitId)
-			.ToDictionary(g => g.Key, g => g.Max(x => x.Count));
+		var userId = RequireUserId();
+		var cloudMap = await FetchCloudCountMapForDateAsync(date);
+		var overlayMap = await _logOverlay.GetCountMapForDateAsync(userId, date);
+		return MergeCountMaps(cloudMap, overlayMap);
 	}
 
 	public async Task<IReadOnlyList<HabitLog>> GetCompletedLogsInRangeAsync(
@@ -128,47 +145,155 @@ public sealed class LogService : ILogService
 			return GuestLogQuery.FilterCompletedInRange(guest, startInclusive, endInclusive);
 		}
 
-		var snapshot = await CloudLogsCollection().GetDocumentsAsync<Dictionary<string, object>>();
+		var userId = RequireUserId();
+		var cloudLogs = await FetchCloudLogsInRangeAsync(startInclusive, endInclusive);
+		var overlayEntries = await _logOverlay.GetLogEntriesInRangeAsync(userId, startInclusive, endInclusive);
+		return MergeLogsWithOverlay(cloudLogs, overlayEntries);
+	}
+
+	private async Task<int> GetMergedCountAsync(string habitId, DateOnly date)
+	{
+		var userId = RequireUserId();
+		var overlayCount = await _logOverlay.GetCountAsync(userId, habitId, date);
+		var cloudCount = await FetchCloudCountAsync(habitId, date);
+		return Math.Max(overlayCount, cloudCount);
+	}
+
+	private async Task<int> FetchCloudCountAsync(string habitId, DateOnly date)
+	{
+		var id = HabitLog.CreateId(date, habitId);
+		var snapshot = await CloudLogsCollection().GetDocument(id).GetDocumentSnapshotAsync<LogFirestoreDto>();
+		return snapshot.Data?.ResolveCount() ?? 0;
+	}
+
+	private async Task<IReadOnlyDictionary<string, int>> FetchCloudCountMapForDateAsync(DateOnly date)
+	{
+		var prefix = date.ToString("yyyy-MM-dd");
+		var snapshot = await CloudLogsCollection().GetDocumentsAsync<LogFirestoreDto>();
 		return snapshot.Documents
-			.Where(d => d.Data is not null && !CloudDocumentSanitizer.ShouldDeleteLogDocument(d.Reference.Id, d.Data))
-			.Select(d => ToLogFromSnapshot(d.Reference.Id, MapLogDto(d.Data!)))
+			.Where(d => d.Data is not null && d.Reference.Id.StartsWith(prefix, StringComparison.Ordinal))
+			.Select(d => new
+			{
+				HabitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, d.Data!.HabitId),
+				Count = d.Data.ResolveCount()
+			})
+			.Where(x => !string.IsNullOrEmpty(x.HabitId) && x.Count > 0)
+			.GroupBy(x => x.HabitId)
+			.ToDictionary(g => g.Key, g => g.Max(x => x.Count));
+	}
+
+	private async Task<IReadOnlyList<HabitLog>> FetchCloudLogsInRangeAsync(
+		DateOnly startInclusive,
+		DateOnly endInclusive)
+	{
+		var snapshot = await CloudLogsCollection().GetDocumentsAsync<LogFirestoreDto>();
+		return snapshot.Documents
+			.Where(d => d.Data is not null && d.Data.ResolveCount() > 0)
+			.Select(d => ToLogFromSnapshot(d.Reference.Id, d.Data!))
 			.Where(l => l is not null && l.Date >= startInclusive && l.Date <= endInclusive)
 			.Cast<HabitLog>()
 			.ToList();
 	}
 
-	private async Task UpsertCountAsync(string habitId, DateOnly date, int count)
+	private static IReadOnlyDictionary<string, int> MergeCountMaps(
+		IReadOnlyDictionary<string, int> cloud,
+		IReadOnlyDictionary<string, int> overlay)
 	{
-		if (_auth.IsGuest)
+		var merged = new Dictionary<string, int>(cloud);
+		foreach (var (habitId, count) in overlay)
 		{
-			var guest = await _guestStore.LoadAsync();
-			var dateKey = date.ToString("yyyy-MM-dd");
-			guest.Logs.RemoveAll(l => l.HabitId == habitId && l.Date == dateKey);
-			if (count > 0)
+			merged[habitId] = merged.TryGetValue(habitId, out var existing)
+				? Math.Max(existing, count)
+				: count;
+		}
+
+		return merged;
+	}
+
+	private static List<HabitLog> MergeLogsWithOverlay(
+		IReadOnlyList<HabitLog> cloudLogs,
+		IReadOnlyList<GuestLogEntry> overlayEntries)
+	{
+		var byKey = cloudLogs.ToDictionary(l => (l.HabitId, l.Date), l => l);
+		foreach (var entry in overlayEntries)
+		{
+			if (!DateOnly.TryParse(entry.Date, out var date))
 			{
-				guest.Logs.Add(new GuestLogEntry
-				{
-					HabitId = habitId,
-					Date = dateKey,
-					IsCompleted = true,
-					Count = count
-				});
+				continue;
 			}
 
-			await _guestStore.SaveAsync(guest);
-			return;
+			var key = (entry.HabitId, date);
+			if (byKey.TryGetValue(key, out var existing))
+			{
+				if (entry.Count > existing.Count)
+				{
+					byKey[key] = ToLog(entry.HabitId, date, true, entry.Count);
+				}
+			}
+			else if (entry.Count > 0)
+			{
+				byKey[key] = ToLog(entry.HabitId, date, true, entry.Count);
+			}
 		}
 
-		var id = HabitLog.CreateId(date, habitId);
-		if (count <= 0)
+		return byKey.Values.OrderBy(l => l.Date).ThenBy(l => l.HabitId, StringComparer.Ordinal).ToList();
+	}
+
+	private async Task UpsertGuestCountAsync(GuestDataSnapshot guest, string habitId, string dateKey, int count)
+	{
+		guest.Logs.RemoveAll(l => l.HabitId == habitId && l.Date == dateKey);
+		if (count > 0)
 		{
-			await CloudLogsCollection().GetDocument(id).DeleteDocumentAsync();
-			return;
+			guest.Logs.Add(new GuestLogEntry
+			{
+				HabitId = habitId,
+				Date = dateKey,
+				IsCompleted = true,
+				Count = count
+			});
 		}
 
+		await _guestStore.SaveAsync(guest);
+	}
+
+	private void QueueCloudUpsert(string habitId, DateOnly date, int count) =>
+		_ = Task.Run(async () =>
+		{
+			try
+			{
+				await UpsertCloudCountAsync(habitId, date, count);
+			}
+			catch
+			{
+				// Overlay remains source of truth until next successful sync.
+			}
+		});
+
+	private void QueueCloudDelete(string habitId, DateOnly date) =>
+		_ = Task.Run(async () =>
+		{
+			try
+			{
+				await DeleteCloudLogAsync(habitId, date);
+			}
+			catch
+			{
+				// Overlay already cleared locally.
+			}
+		});
+
+	private async Task UpsertCloudCountAsync(string habitId, DateOnly date, int count)
+	{
+		var id = HabitLog.CreateId(date, habitId);
 		await CloudLogsCollection()
 			.GetDocument(id)
 			.SetDataAsync(LogFirestoreDto.FromEntry(habitId, date, count));
+	}
+
+	private async Task DeleteCloudLogAsync(string habitId, DateOnly date)
+	{
+		var id = HabitLog.CreateId(date, habitId);
+		await CloudLogsCollection().GetDocument(id).DeleteDocumentAsync();
 	}
 
 	private static HabitLog ToLog(string habitId, DateOnly date, bool isCompleted, int count) => new()
@@ -207,41 +332,13 @@ public sealed class LogService : ILogService
 		return null;
 	}
 
-	private static LogFirestoreDto MapLogDto(IReadOnlyDictionary<string, object> data) => new()
-	{
-		HabitId = GetString(data, CloudDocumentSanitizer.LogHabitIdField),
-		Date = GetString(data, "date"),
-		IsCompleted = GetBool(data, CloudDocumentSanitizer.LogIsCompletedField),
-		Count = GetInt(data, CloudDocumentSanitizer.LogCountField)
-	};
-
-	private static string GetString(IReadOnlyDictionary<string, object> data, string key) =>
-		data.TryGetValue(key, out var value) && value is not null ? value.ToString() ?? string.Empty : string.Empty;
-
-	private static bool GetBool(IReadOnlyDictionary<string, object> data, string key) =>
-		data.TryGetValue(key, out var value) && value is bool b && b;
-
-	private static int GetInt(IReadOnlyDictionary<string, object> data, string key)
-	{
-		if (!data.TryGetValue(key, out var value) || value is null)
-		{
-			return 0;
-		}
-
-		return value switch
-		{
-			int i => i,
-			long l => (int)l,
-			double d => (int)d,
-			_ => int.TryParse(value.ToString(), out var parsed) ? parsed : 0
-		};
-	}
+	private string RequireUserId() =>
+		_firebaseAuth.CurrentUser?.Uid
+		?? throw new InvalidOperationException("User must be signed in.");
 
 	private ICollectionReference CloudLogsCollection()
 	{
-		var userId = _firebaseAuth.CurrentUser?.Uid
-			?? throw new InvalidOperationException("User must be signed in.");
-
+		var userId = RequireUserId();
 		return _firestore.GetCollection($"users/{userId}/logs");
 	}
 }

@@ -7,15 +7,18 @@ public sealed class AuthService : IAuthService
 	private readonly IFirebaseAuth _firebaseAuth;
 	private readonly IGoogleSignInService _googleSignInService;
 	private readonly IGuestDataSyncService _guestDataSyncService;
+	private readonly ILocalLogOverlayStore _logOverlay;
 
 	public AuthService(
 		IFirebaseAuth firebaseAuth,
 		IGoogleSignInService googleSignInService,
-		IGuestDataSyncService guestDataSyncService)
+		IGuestDataSyncService guestDataSyncService,
+		ILocalLogOverlayStore logOverlay)
 	{
 		_firebaseAuth = firebaseAuth;
 		_googleSignInService = googleSignInService;
 		_guestDataSyncService = guestDataSyncService;
+		_logOverlay = logOverlay;
 	}
 
 	public bool IsSignedIn => _firebaseAuth.CurrentUser is not null;
@@ -39,7 +42,13 @@ public sealed class AuthService : IAuthService
 	{
 		if (IsSignedIn)
 		{
+			var userId = UserId;
 			await _guestDataSyncService.DownloadCloudDataToGuestAsync();
+			if (!string.IsNullOrEmpty(userId))
+			{
+				await _logOverlay.ClearForUserAsync(userId);
+			}
+
 			await _firebaseAuth.SignOutAsync();
 		}
 	}

@@ -17,11 +17,31 @@ public static class WidgetCompletionService
 		public bool ShouldRemoveFromWidget => NewCount >= DailyTarget;
 	}
 
-	public static async Task<IncrementResult> IncrementHabitAsync(Context context, string habitId)
+	public static IncrementResult IncrementHabitAsync(Context context, string habitId)
 	{
 		var today = DateOnly.FromDateTime(DateTime.Today);
-		var dailyTarget = await GetDailyTargetAsync(context, habitId);
-		var newCount = await WriteIncrementAsync(context, habitId, today);
+		var snapshot = WidgetSnapshotStore.Load(context);
+		var entry = snapshot.Habits.FirstOrDefault(h => h.Id == habitId);
+		var dailyTarget = entry?.TimesPerDay ?? 1;
+
+		var userId = CrossFirebaseAuth.Current.CurrentUser?.Uid;
+		var appDataDirectory = context.FilesDir?.AbsolutePath
+			?? throw new InvalidOperationException("Android files directory unavailable.");
+
+		int newCount;
+		if (string.IsNullOrEmpty(userId))
+		{
+			newCount = LocalGuestStore.IncrementCount(appDataDirectory, habitId, today);
+		}
+		else
+		{
+			newCount = LocalLogOverlayStore.IncrementCount(appDataDirectory, userId, habitId, today);
+			QueueFirestoreSync(context, userId, habitId, today, newCount);
+		}
+
+		ApplyWidgetSnapshotUpdate(context, habitId, newCount, dailyTarget);
+		HabitsAppWidgetProvider.UpdateAllWidgets(context);
+
 		return new IncrementResult
 		{
 			NewCount = newCount,
@@ -29,61 +49,34 @@ public static class WidgetCompletionService
 		};
 	}
 
-	private static async Task<int> WriteIncrementAsync(Context context, string habitId, DateOnly today)
+	private static void ApplyWidgetSnapshotUpdate(Context context, string habitId, int newCount, int dailyTarget)
 	{
-		var userId = CrossFirebaseAuth.Current.CurrentUser?.Uid;
-
-		if (string.IsNullOrEmpty(userId))
+		if (newCount >= dailyTarget)
 		{
-			var appDataDirectory = context.FilesDir?.AbsolutePath
-				?? throw new InvalidOperationException("Android files directory unavailable.");
-			return LocalGuestStore.IncrementCount(appDataDirectory, habitId, today);
+			WidgetSnapshotStore.RemoveHabit(context, habitId);
+			return;
 		}
 
-		FirebaseAndroidBootstrap.EnsureInitialized(context);
-
-		var logId = HabitLog.CreateId(today, habitId);
-		var doc = CrossFirebaseFirestore.Current
-			.GetCollection($"users/{userId}/logs")
-			.GetDocument(logId);
-
-		var snapshot = await doc.GetDocumentSnapshotAsync<LogFirestoreDto>();
-		var current = snapshot.Data?.ResolveCount() ?? 0;
-		var next = current + 1;
-
-		await doc.SetDataAsync(LogFirestoreDto.FromEntry(habitId, today, next));
-
-		return next;
+		WidgetSnapshotStore.UpdateHabitCount(context, habitId, newCount);
 	}
 
-	private static async Task<int> GetDailyTargetAsync(Context context, string habitId)
+	private static void QueueFirestoreSync(Context context, string userId, string habitId, DateOnly today, int count)
 	{
-		var userId = CrossFirebaseAuth.Current.CurrentUser?.Uid;
-
-		if (string.IsNullOrEmpty(userId))
+		_ = Task.Run(async () =>
 		{
-			var appDataDirectory = context.FilesDir?.AbsolutePath;
-			if (string.IsNullOrEmpty(appDataDirectory))
+			try
 			{
-				return 1;
+				FirebaseAndroidBootstrap.EnsureInitialized(context);
+				var logId = HabitLog.CreateId(today, habitId);
+				await CrossFirebaseFirestore.Current
+					.GetCollection($"users/{userId}/logs")
+					.GetDocument(logId)
+					.SetDataAsync(LogFirestoreDto.FromEntry(habitId, today, count));
 			}
-
-			var guest = LocalGuestStore.LoadFromPath(LocalGuestStore.GetFilePath(appDataDirectory));
-			var habit = guest.Habits.FirstOrDefault(h => h.Id == habitId && h.IsActive);
-			return habit is null ? 1 : HabitDailyTargetHelper.GetDailyTarget(habit);
-		}
-
-		FirebaseAndroidBootstrap.EnsureInitialized(context);
-		var habitSnapshot = await CrossFirebaseFirestore.Current
-			.GetCollection($"users/{userId}/habits")
-			.GetDocument(habitId)
-			.GetDocumentSnapshotAsync<HabitFirestoreDto>();
-
-		if (habitSnapshot.Data is null || !habitSnapshot.Data.IsValidCloudDocument())
-		{
-			return 1;
-		}
-
-		return HabitDailyTargetHelper.GetDailyTarget(habitSnapshot.Data.ToModel(habitId));
+			catch
+			{
+				// Local overlay remains authoritative until the app syncs again.
+			}
+		});
 	}
 }

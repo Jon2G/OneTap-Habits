@@ -156,43 +156,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 		{
 			var count = countMap.TryGetValue(habit.Id, out var value) ? value : 0;
 			var completionByDate = CompletionMapBuilder.BuildForHabit(habit.Id, historyLogs);
-			var dailyTarget = HabitDailyTargetHelper.GetDailyTarget(habit);
-
-			string primaryLabel;
-			string secondaryLabel;
-
-			if (habit.ScheduleMode == HabitScheduleMode.TimesPerWeek)
-			{
-				var weekStart = WeekBoundaryHelper.GetWeekStart(viewDate);
-				var weekCount = _weeklyProgress.CountCompletionsInWeek(habit.Id, weekStart, historyLogs);
-				var weeklyStreak = _weeklyProgress.CalculateWeeklyStreak(habit, historyLogs, viewDate);
-				primaryLabel = string.Format(_localization.Get("WeeklyProgressFormat"), weekCount, habit.TimesPerWeek);
-				secondaryLabel = string.Format(_localization.Get("WeeklyStreakFormat"), weeklyStreak);
-			}
-			else
-			{
-				var streak = _streakService.CalculateCurrentStreak(habit, completionByDate, viewDate);
-				primaryLabel = string.Format(_localization.Get("Streak"), streak);
-				secondaryLabel = dailyTarget > 1
-					? string.Format(_localization.Get("DailyProgressFormat"), count, dailyTarget)
-					: count > 0
-						? _localization.Get("Completed")
-						: _localization.Get("TapToComplete");
-			}
-
-			Habits.Add(new TodayHabitItem(
-				habit,
-				count,
-				dailyTarget,
-				primaryLabel,
-				secondaryLabel,
-				IncrementHabitCommand,
-				UndoHabitCommand,
-				EditHabitCommand,
-				DeleteHabitCommand,
-				editLabel,
-				deleteLabel,
-				swipeHint));
+			Habits.Add(BuildTodayHabitItem(habit, count, completionByDate, historyLogs, editLabel, deleteLabel, swipeHint));
 		}
 
 		if (IsViewingToday)
@@ -232,8 +196,9 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 			return;
 		}
 
-		await _logService.IncrementCountAsync(item.Habit.Id, SelectedDate);
-		await LoadAsync();
+		var next = await _logService.IncrementCountAsync(item.Habit.Id, SelectedDate);
+		ReplaceHabitCount(item.Habit.Id, next);
+		_ = RefreshHabitsInBackgroundAsync();
 	}
 
 	[RelayCommand]
@@ -245,7 +210,110 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 		}
 
 		await _logService.SetCompletedAsync(item.Habit.Id, SelectedDate, false);
-		await LoadAsync();
+		ReplaceHabitCount(item.Habit.Id, 0);
+		_ = RefreshHabitsInBackgroundAsync();
+	}
+
+	private async Task RefreshHabitsInBackgroundAsync()
+	{
+		try
+		{
+			await LoadHabitsAsync();
+		}
+		catch
+		{
+			// Optimistic UI already updated; background refresh is best-effort.
+		}
+	}
+
+	private void ReplaceHabitCount(string habitId, int newCount)
+	{
+		for (var i = 0; i < Habits.Count; i++)
+		{
+			if (Habits[i].Habit.Id != habitId)
+			{
+				continue;
+			}
+
+			Habits[i] = RebuildTodayHabitItem(Habits[i], newCount);
+			return;
+		}
+	}
+
+	private TodayHabitItem RebuildTodayHabitItem(TodayHabitItem existing, int newCount)
+	{
+		var habit = existing.Habit;
+		var dailyTarget = existing.DailyTarget;
+		var secondaryLabel = habit.ScheduleMode == HabitScheduleMode.TimesPerWeek
+			? existing.CompletedLabel
+			: dailyTarget > 1
+				? string.Format(_localization.Get("DailyProgressFormat"), newCount, dailyTarget)
+				: newCount > 0
+					? _localization.Get("Completed")
+					: _localization.Get("TapToComplete");
+
+		return new TodayHabitItem(
+			habit,
+			newCount,
+			dailyTarget,
+			existing.StreakLabel,
+			secondaryLabel,
+			IncrementHabitCommand,
+			UndoHabitCommand,
+			EditHabitCommand,
+			DeleteHabitCommand,
+			existing.EditLabel,
+			existing.DeleteLabel,
+			existing.SwipeHint);
+	}
+
+	private TodayHabitItem BuildTodayHabitItem(
+		Habit habit,
+		int count,
+		IReadOnlyDictionary<DateOnly, bool> completionByDate,
+		IReadOnlyList<HabitLog> historyLogs,
+		string editLabel,
+		string deleteLabel,
+		string swipeHint)
+	{
+		var viewDate = SelectedDate;
+		var dailyTarget = HabitDailyTargetHelper.GetDailyTarget(habit);
+
+		string primaryLabel;
+		string secondaryLabel;
+
+		if (habit.ScheduleMode == HabitScheduleMode.TimesPerWeek)
+		{
+			var weekStart = WeekBoundaryHelper.GetWeekStart(viewDate);
+			var weekCount = _weeklyProgress.CountCompletionsInWeek(habit.Id, weekStart, historyLogs);
+			var weeklyStreak = _weeklyProgress.CalculateWeeklyStreak(habit, historyLogs, viewDate);
+			primaryLabel = string.Format(_localization.Get("WeeklyProgressFormat"), weekCount, habit.TimesPerWeek);
+			secondaryLabel = string.Format(_localization.Get("WeeklyStreakFormat"), weeklyStreak);
+		}
+		else
+		{
+			var streak = _streakService.CalculateCurrentStreak(habit, completionByDate, viewDate);
+			primaryLabel = string.Format(_localization.Get("Streak"), streak);
+			secondaryLabel = dailyTarget > 1
+				? string.Format(_localization.Get("DailyProgressFormat"), count, dailyTarget)
+				: count > 0
+					? _localization.Get("Completed")
+					: _localization.Get("TapToComplete");
+		}
+
+		return new TodayHabitItem(
+			habit,
+			count,
+			dailyTarget,
+			primaryLabel,
+			secondaryLabel,
+			IncrementHabitCommand,
+			UndoHabitCommand,
+			EditHabitCommand,
+			DeleteHabitCommand,
+			editLabel,
+			deleteLabel,
+			swipeHint);
 	}
 
 	[RelayCommand]
