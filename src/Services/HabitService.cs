@@ -11,17 +11,20 @@ public sealed class HabitService : IHabitService
 	private readonly IFirebaseAuth _firebaseAuth;
 	private readonly IFirebaseFirestore _firestore;
 	private readonly ILocalGuestStore _guestStore;
+	private readonly ILocalCloudStore _cloudStore;
 
 	public HabitService(
 		IAuthService auth,
 		IFirebaseAuth firebaseAuth,
 		IFirebaseFirestore firestore,
-		ILocalGuestStore guestStore)
+		ILocalGuestStore guestStore,
+		ILocalCloudStore cloudStore)
 	{
 		_auth = auth;
 		_firebaseAuth = firebaseAuth;
 		_firestore = firestore;
 		_guestStore = guestStore;
+		_cloudStore = cloudStore;
 	}
 
 	public async Task<IReadOnlyList<Habit>> GetActiveHabitsAsync()
@@ -44,17 +47,14 @@ public sealed class HabitService : IHabitService
 			return OrderHabits(habits);
 		}
 
-		var snapshot = await CloudHabitsCollection().GetDocumentsAsync<HabitFirestoreDto>();
-		var cloudHabits = snapshot.Documents
-			.Where(d => d.Data is not null && d.Data.IsActive && d.Data.IsValidCloudDocument())
-			.Select(d => d.Data!.ToModel(d.Reference.Id))
-			.ToList();
-
+		var userId = RequireUserId();
+		var cloudHabits = (await _cloudStore.GetActiveHabitsAsync(userId)).ToList();
 		if (HabitSortOrderHelper.TryApplyLegacySortOrders(cloudHabits))
 		{
 			foreach (var habit in cloudHabits)
 			{
-				await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitFirestoreDto.FromModel(habit));
+				await _cloudStore.UpsertHabitAsync(userId, habit);
+				QueueCloudHabitUpsert(habit);
 			}
 		}
 
@@ -69,13 +69,7 @@ public sealed class HabitService : IHabitService
 			return guest.Habits.FirstOrDefault(h => h.Id == habitId);
 		}
 
-		var snapshot = await CloudHabitsCollection().GetDocument(habitId).GetDocumentSnapshotAsync<HabitFirestoreDto>();
-		if (snapshot.Data is null || !snapshot.Data.IsValidCloudDocument())
-		{
-			return null;
-		}
-
-		return snapshot.Data.ToModel(habitId);
+		return await _cloudStore.GetHabitAsync(RequireUserId(), habitId);
 	}
 
 	public async Task SaveHabitAsync(Habit habit)
@@ -102,7 +96,8 @@ public sealed class HabitService : IHabitService
 		}
 		else
 		{
-			await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitFirestoreDto.FromModel(habit));
+			await _cloudStore.UpsertHabitAsync(RequireUserId(), habit);
+			QueueCloudHabitUpsert(habit);
 		}
 	}
 
@@ -137,13 +132,30 @@ public sealed class HabitService : IHabitService
 			return;
 		}
 
+		var userId = RequireUserId();
 		var habits = (await GetActiveHabitsAsync()).ToList();
 		ApplyReorder(habits, orderedHabitIds);
 		foreach (var habit in habits)
 		{
-			await CloudHabitsCollection().GetDocument(habit.Id).SetDataAsync(HabitFirestoreDto.FromModel(habit));
+			await _cloudStore.UpsertHabitAsync(userId, habit);
+			QueueCloudHabitUpsert(habit);
 		}
 	}
+
+	private void QueueCloudHabitUpsert(Habit habit) =>
+		_ = Task.Run(async () =>
+		{
+			try
+			{
+				await CloudHabitsCollection()
+					.GetDocument(habit.Id)
+					.SetDataAsync(HabitFirestoreDto.FromModel(habit));
+			}
+			catch
+			{
+				// Local cache remains authoritative until next successful sync.
+			}
+		});
 
 	private static void ApplyReorder(IList<Habit> habits, IReadOnlyList<string> orderedHabitIds)
 	{
@@ -160,11 +172,13 @@ public sealed class HabitService : IHabitService
 	private static IReadOnlyList<Habit> OrderHabits(IEnumerable<Habit> habits) =>
 		habits.OrderBy(h => h.SortOrder).ThenBy(h => h.Name, StringComparer.OrdinalIgnoreCase).ToList();
 
+	private string RequireUserId() =>
+		_firebaseAuth.CurrentUser?.Uid
+		?? throw new InvalidOperationException("User must be signed in.");
+
 	private ICollectionReference CloudHabitsCollection()
 	{
-		var userId = _firebaseAuth.CurrentUser?.Uid
-			?? throw new InvalidOperationException("User must be signed in.");
-
+		var userId = RequireUserId();
 		return _firestore.GetCollection($"users/{userId}/habits");
 	}
 }

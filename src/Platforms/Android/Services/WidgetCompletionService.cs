@@ -35,7 +35,7 @@ public static class WidgetCompletionService
 		}
 		else
 		{
-			newCount = LocalLogOverlayStore.IncrementCount(appDataDirectory, userId, habitId, today);
+			newCount = LocalCloudStore.IncrementCount(appDataDirectory, userId, habitId, today);
 			QueueFirestoreSync(context, userId, habitId, today, newCount);
 		}
 
@@ -75,7 +75,7 @@ public static class WidgetCompletionService
 			}
 			catch
 			{
-				// Local overlay remains authoritative until the app syncs again.
+				// Local cache remains authoritative until the app syncs again.
 			}
 		});
 	}

@@ -11,7 +11,9 @@ namespace OneTapHabits.ViewModels;
 public partial class TodayViewModel : ObservableObject, IQueryAttributable
 {
 	private const int StreakLookbackDays = 400;
+	private const string StreakPlaceholder = "—";
 
+	private readonly IAuthService _authService;
 	private readonly IHabitService _habitService;
 	private readonly ILogService _logService;
 	private readonly IStreakService _streakService;
@@ -20,6 +22,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	private readonly IWidgetRefreshService _widgetRefresh;
 	private readonly IFirstLaunchSeedService _firstLaunchSeed;
 	private readonly IHabitReminderService _reminderService;
+	private readonly ICloudSyncService _cloudSync;
 
 	public ObservableCollection<TodayHabitItem> Habits { get; } = [];
 
@@ -30,6 +33,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
 
 	public TodayViewModel(
+		IAuthService authService,
 		IHabitService habitService,
 		ILogService logService,
 		IStreakService streakService,
@@ -37,8 +41,10 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 		ILocalizationService localization,
 		IWidgetRefreshService widgetRefresh,
 		IFirstLaunchSeedService firstLaunchSeed,
-		IHabitReminderService reminderService)
+		IHabitReminderService reminderService,
+		ICloudSyncService cloudSync)
 	{
+		_authService = authService;
 		_habitService = habitService;
 		_logService = logService;
 		_streakService = streakService;
@@ -47,6 +53,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 		_widgetRefresh = widgetRefresh;
 		_firstLaunchSeed = firstLaunchSeed;
 		_reminderService = reminderService;
+		_cloudSync = cloudSync;
 	}
 
 	private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
@@ -95,7 +102,8 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	[RelayCommand]
 	public async Task LoadAsync()
 	{
-		await LoadHabitsAsync();
+		await LoadHabitsAsync(syncFromCloud: false);
+		RequestBackgroundCloudSync();
 	}
 
 	[RelayCommand]
@@ -103,7 +111,12 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	{
 		try
 		{
-			await LoadHabitsAsync();
+			if (!_authService.IsGuest)
+			{
+				await _cloudSync.SyncFromCloudAsync();
+			}
+
+			await LoadHabitsAsync(syncFromCloud: false);
 		}
 		finally
 		{
@@ -115,7 +128,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	private async Task PreviousDayAsync()
 	{
 		SelectedDate = SelectedDate.AddDays(-1);
-		await LoadHabitsAsync();
+		await LoadHabitsAsync(syncFromCloud: false);
 	}
 
 	[RelayCommand]
@@ -127,25 +140,33 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 		}
 
 		SelectedDate = SelectedDate.AddDays(1);
-		await LoadHabitsAsync();
+		await LoadHabitsAsync(syncFromCloud: false);
 	}
 
 	[RelayCommand]
 	private async Task GoToTodayAsync()
 	{
 		SelectedDate = Today;
-		await LoadHabitsAsync();
+		await LoadHabitsAsync(syncFromCloud: false);
 	}
 
-	private async Task LoadHabitsAsync()
+	public async Task ReloadFromCacheAsync()
 	{
+		await LoadHabitsAsync(syncFromCloud: false);
+	}
+
+	private async Task LoadHabitsAsync(bool syncFromCloud)
+	{
+		if (syncFromCloud && !_authService.IsGuest)
+		{
+			await _cloudSync.SyncFromCloudAsync();
+		}
+
 		await _firstLaunchSeed.SeedIfNeededAsync();
 
 		var viewDate = SelectedDate;
 		var habits = await _habitService.GetTodayHabitsAsync(viewDate);
 		var countMap = await _logService.GetCountMapForDateAsync(viewDate);
-		var historyStart = viewDate.AddDays(-StreakLookbackDays);
-		var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, viewDate);
 
 		var editLabel = _localization.Get("EditHabit");
 		var deleteLabel = _localization.Get("DeleteHabit");
@@ -155,13 +176,42 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 		foreach (var habit in habits)
 		{
 			var count = countMap.TryGetValue(habit.Id, out var value) ? value : 0;
-			var completionByDate = CompletionMapBuilder.BuildForHabit(habit.Id, historyLogs);
-			Habits.Add(BuildTodayHabitItem(habit, count, completionByDate, historyLogs, editLabel, deleteLabel, swipeHint));
+			Habits.Add(BuildTodayHabitItemFast(habit, count, editLabel, deleteLabel, swipeHint));
 		}
 
 		if (IsViewingToday)
 		{
-			await _widgetRefresh.RefreshAsync();
+			await _widgetRefresh.RefreshAsync(habits, countMap);
+		}
+
+		await EnrichStreakLabelsAsync(viewDate, habits, countMap, editLabel, deleteLabel, swipeHint);
+	}
+
+	private async Task EnrichStreakLabelsAsync(
+		DateOnly viewDate,
+		IReadOnlyList<Habit> habits,
+		IReadOnlyDictionary<string, int> countMap,
+		string editLabel,
+		string deleteLabel,
+		string swipeHint)
+	{
+		var historyStart = viewDate.AddDays(-StreakLookbackDays);
+		var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, viewDate);
+
+		for (var i = 0; i < habits.Count; i++)
+		{
+			var habit = habits[i];
+			var count = countMap.TryGetValue(habit.Id, out var value) ? value : 0;
+			var completionByDate = CompletionMapBuilder.BuildForHabit(habit.Id, historyLogs);
+			Habits[i] = BuildTodayHabitItem(habit, count, completionByDate, historyLogs, editLabel, deleteLabel, swipeHint);
+		}
+	}
+
+	private void RequestBackgroundCloudSync()
+	{
+		if (!_authService.IsGuest)
+		{
+			_cloudSync.RequestBackgroundSync();
 		}
 	}
 
@@ -185,7 +235,11 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 		var fullOrder = visibleOrder.Concat(rest).ToList();
 
 		await _habitService.ReorderHabitsAsync(fullOrder);
-		await _widgetRefresh.RefreshAsync();
+
+		var today = DateOnly.FromDateTime(DateTime.Today);
+		var habits = await _habitService.GetTodayHabitsAsync(today);
+		var countMap = await _logService.GetCountMapForDateAsync(today);
+		await _widgetRefresh.RefreshAsync(habits, countMap);
 	}
 
 	[RelayCommand]
@@ -218,7 +272,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	{
 		try
 		{
-			await LoadHabitsAsync();
+			await LoadHabitsAsync(syncFromCloud: false);
 		}
 		catch
 		{
@@ -265,6 +319,37 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 			existing.EditLabel,
 			existing.DeleteLabel,
 			existing.SwipeHint);
+	}
+
+	private TodayHabitItem BuildTodayHabitItemFast(
+		Habit habit,
+		int count,
+		string editLabel,
+		string deleteLabel,
+		string swipeHint)
+	{
+		var dailyTarget = HabitDailyTargetHelper.GetDailyTarget(habit);
+		var secondaryLabel = habit.ScheduleMode == HabitScheduleMode.TimesPerWeek
+			? StreakPlaceholder
+			: dailyTarget > 1
+				? string.Format(_localization.Get("DailyProgressFormat"), count, dailyTarget)
+				: count > 0
+					? _localization.Get("Completed")
+					: _localization.Get("TapToComplete");
+
+		return new TodayHabitItem(
+			habit,
+			count,
+			dailyTarget,
+			StreakPlaceholder,
+			secondaryLabel,
+			IncrementHabitCommand,
+			UndoHabitCommand,
+			EditHabitCommand,
+			DeleteHabitCommand,
+			editLabel,
+			deleteLabel,
+			swipeHint);
 	}
 
 	private TodayHabitItem BuildTodayHabitItem(

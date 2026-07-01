@@ -1,4 +1,3 @@
-using Android.Appwidget;
 using OneTapHabits.Models;
 using OneTapHabits.Services;
 using OneTapHabits.Services.Widget;
@@ -16,7 +15,35 @@ public sealed class WidgetRefreshService : IWidgetRefreshService
 		_logService = logService;
 	}
 
-	public async Task RefreshAsync()
+	public Task RefreshAsync() =>
+		RefreshFromServicesAsync();
+
+	public Task RefreshAsync(IReadOnlyList<Habit> todayHabits, IReadOnlyDictionary<string, int> countMap)
+	{
+		var context = global::Android.App.Application.Context;
+		if (context is null)
+		{
+			return Task.CompletedTask;
+		}
+
+		ApplySnapshot(context, todayHabits, countMap);
+		return Task.CompletedTask;
+	}
+
+	public Task ClearAsync()
+	{
+		var context = global::Android.App.Application.Context;
+		if (context is null)
+		{
+			return Task.CompletedTask;
+		}
+
+		WidgetSnapshotStore.Clear(context);
+		AppWidgets.HabitsAppWidgetProvider.UpdateAllWidgets(context);
+		return Task.CompletedTask;
+	}
+
+	private async Task RefreshFromServicesAsync()
 	{
 		var context = global::Android.App.Application.Context;
 		if (context is null)
@@ -27,7 +54,15 @@ public sealed class WidgetRefreshService : IWidgetRefreshService
 		var today = DateOnly.FromDateTime(DateTime.Today);
 		var habits = await _habitService.GetTodayHabitsAsync(today);
 		var countMap = await _logService.GetCountMapForDateAsync(today);
+		ApplySnapshot(context, habits, countMap);
+	}
 
+	private static void ApplySnapshot(
+		global::Android.Content.Context context,
+		IReadOnlyList<Habit> habits,
+		IReadOnlyDictionary<string, int> countMap)
+	{
+		var today = DateOnly.FromDateTime(DateTime.Today);
 		var incomplete = habits
 			.Where(h => h.ShowInWidget)
 			.Where(h =>
@@ -57,18 +92,5 @@ public sealed class WidgetRefreshService : IWidgetRefreshService
 		});
 
 		AppWidgets.HabitsAppWidgetProvider.UpdateAllWidgets(context);
-	}
-
-	public Task ClearAsync()
-	{
-		var context = global::Android.App.Application.Context;
-		if (context is null)
-		{
-			return Task.CompletedTask;
-		}
-
-		WidgetSnapshotStore.Clear(context);
-		AppWidgets.HabitsAppWidgetProvider.UpdateAllWidgets(context);
-		return Task.CompletedTask;
 	}
 }

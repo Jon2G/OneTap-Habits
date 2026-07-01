@@ -11,17 +11,22 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 	private readonly IFirebaseAuth _auth;
 	private readonly IFirebaseFirestore _firestore;
 	private readonly ILocalGuestStore _guestStore;
+	private readonly ILocalCloudStore _cloudStore;
 	private readonly IDiagnosticLogService _diagnosticLog;
+	private IReadOnlyList<Habit> _lastCloudHabits = [];
+	private IReadOnlyList<GuestLogEntry> _lastCloudLogs = [];
 
 	public GuestDataSyncService(
 		IFirebaseAuth auth,
 		IFirebaseFirestore firestore,
 		ILocalGuestStore guestStore,
+		ILocalCloudStore cloudStore,
 		IDiagnosticLogService diagnosticLog)
 	{
 		_auth = auth;
 		_firestore = firestore;
 		_guestStore = guestStore;
+		_cloudStore = cloudStore;
 		_diagnosticLog = diagnosticLog;
 	}
 
@@ -45,8 +50,10 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		var sampleIds = SignInGuestDataHelper.ParseSampleHabitIds(
 			Preferences.Default.Get(SignInGuestDataHelper.SampleHabitIdsPreferenceKey, string.Empty));
 
-		var cloudHabits = await FetchCloudHabitsAsync(userId, cancellationToken);
-		var cloudLogs = await FetchCloudLogsAsync(userId, cancellationToken);
+		var cloudHabits = await CloudSnapshotFetcher.FetchHabitsAsync(_firestore, userId, cancellationToken);
+		var cloudLogs = await CloudSnapshotFetcher.FetchLogsAsync(_firestore, userId, cancellationToken);
+		_lastCloudHabits = cloudHabits;
+		_lastCloudLogs = cloudLogs;
 
 		var meaningfulLocal = SignInGuestDataHelper.HasMeaningfulGuestData(guest, sampleIds);
 		var cloudHasData = SignInGuestDataHelper.HasCloudData(cloudHabits, cloudLogs);
@@ -72,7 +79,12 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		switch (resolution)
 		{
 			case SignInDataResolution.KeepCloud:
-				_diagnosticLog.LogInfo("SignInSync", "KeepCloud: clearing guest store.");
+				_diagnosticLog.LogInfo("SignInSync", "KeepCloud: seeding cloud cache and clearing guest store.");
+				await _cloudStore.SaveAsync(userId, new GuestDataSnapshot
+				{
+					Habits = _lastCloudHabits.ToList(),
+					Logs = _lastCloudLogs.ToList()
+				}, cancellationToken);
 				await _guestStore.ClearAsync(cancellationToken);
 				break;
 
@@ -83,6 +95,11 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 					$"UseThisDevice: uploading guest habits={guest.Habits.Count(h => h.IsActive)} logs={guest.Logs.Count}.");
 				try
 				{
+					await _cloudStore.SaveAsync(userId, new GuestDataSnapshot
+					{
+						Habits = guest.Habits.ToList(),
+						Logs = guest.Logs.ToList()
+					}, cancellationToken);
 					await ReplaceCloudWithGuestAsync(userId, guest, cancellationToken);
 					await _guestStore.ClearAsync(cancellationToken);
 					_diagnosticLog.LogInfo("SignInSync", "UseThisDevice: upload complete, guest cleared.");
@@ -105,14 +122,19 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		var userId = _auth.CurrentUser?.Uid
 			?? throw new InvalidOperationException("Must be signed in to download cloud data.");
 
-		var habits = await FetchCloudHabitsAsync(userId, cancellationToken);
-		var logs = await FetchCloudLogsAsync(userId, cancellationToken);
-
-		await _guestStore.SaveAsync(new GuestDataSnapshot
+		var local = await _cloudStore.LoadAsync(userId, cancellationToken);
+		if (local.Habits.Count == 0 && local.Logs.Count == 0)
 		{
-			Habits = habits.ToList(),
-			Logs = logs.ToList()
-		}, cancellationToken);
+			var habits = await CloudSnapshotFetcher.FetchHabitsAsync(_firestore, userId, cancellationToken);
+			var logs = await CloudSnapshotFetcher.FetchLogsAsync(_firestore, userId, cancellationToken);
+			local = new GuestDataSnapshot
+			{
+				Habits = habits.ToList(),
+				Logs = logs.ToList()
+			};
+		}
+
+		await _guestStore.SaveAsync(local, cancellationToken);
 	}
 
 	private async Task ReplaceCloudWithGuestAsync(
@@ -140,74 +162,6 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 			cancellationToken.ThrowIfCancellationRequested();
 			await document.Reference.DeleteDocumentAsync();
 		}
-	}
-
-	private async Task<IReadOnlyList<Habit>> FetchCloudHabitsAsync(string userId, CancellationToken cancellationToken)
-	{
-		cancellationToken.ThrowIfCancellationRequested();
-		var habitsSnapshot = await HabitsCollection(userId).GetDocumentsAsync<HabitFirestoreDto>();
-		return habitsSnapshot.Documents
-			.Where(d => d.Data is not null && d.Data.IsActive && d.Data.IsValidCloudDocument())
-			.Select(d => d.Data!.ToModel(d.Reference.Id))
-			.ToList();
-	}
-
-	private async Task<IReadOnlyList<GuestLogEntry>> FetchCloudLogsAsync(string userId, CancellationToken cancellationToken)
-	{
-		cancellationToken.ThrowIfCancellationRequested();
-		var logsSnapshot = await LogsCollection(userId).GetDocumentsAsync<Dictionary<string, object>>();
-		return logsSnapshot.Documents
-			.Where(d => d.Data is not null && !CloudDocumentSanitizer.ShouldDeleteLogDocument(d.Reference.Id, d.Data))
-			.Select(d =>
-			{
-				var dto = MapLogDto(d.Data!);
-				var habitId = HabitLogDocumentId.ResolveHabitId(d.Reference.Id, dto.HabitId);
-				var date = HabitLogDocumentId.TryParse(d.Reference.Id, out var fromId, out _)
-					? fromId
-					: DateOnly.TryParse(dto.Date, out var parsed)
-						? parsed
-						: DateOnly.FromDateTime(DateTime.Today);
-				var count = dto.ResolveCount();
-				return new GuestLogEntry
-				{
-					HabitId = habitId,
-					Date = date.ToString("yyyy-MM-dd"),
-					IsCompleted = count > 0,
-					Count = count
-				};
-			})
-			.Where(e => !string.IsNullOrEmpty(e.HabitId) && e.Count > 0)
-			.ToList();
-	}
-
-	private static LogFirestoreDto MapLogDto(IReadOnlyDictionary<string, object> data) => new()
-	{
-		HabitId = GetString(data, CloudDocumentSanitizer.LogHabitIdField),
-		Date = GetString(data, "date"),
-		IsCompleted = GetBool(data, CloudDocumentSanitizer.LogIsCompletedField),
-		Count = GetInt(data, CloudDocumentSanitizer.LogCountField)
-	};
-
-	private static string GetString(IReadOnlyDictionary<string, object> data, string key) =>
-		data.TryGetValue(key, out var value) && value is not null ? value.ToString() ?? string.Empty : string.Empty;
-
-	private static bool GetBool(IReadOnlyDictionary<string, object> data, string key) =>
-		data.TryGetValue(key, out var value) && value is bool b && b;
-
-	private static int GetInt(IReadOnlyDictionary<string, object> data, string key)
-	{
-		if (!data.TryGetValue(key, out var value) || value is null)
-		{
-			return 0;
-		}
-
-		return value switch
-		{
-			int i => i,
-			long l => (int)l,
-			double d => (int)d,
-			_ => int.TryParse(value.ToString(), out var parsed) ? parsed : 0
-		};
 	}
 
 	private async Task UploadHabitsAsync(
