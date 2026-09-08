@@ -30,7 +30,7 @@ permissions:
   contents: read
 
 env:
-  DOTNET_VERSION: '9.0.300'
+  DOTNET_VERSION: '9.0.317'
   PROJECT_PATH: src/OneTapHabits.csproj
 
 jobs:
@@ -68,11 +68,10 @@ jobs:
           distribution: microsoft
           java-version: 17
 
-      - name: Update workload manifests
-        run: dotnet workload update
-
       - name: Restore workloads
-        run: dotnet workload restore ${{ env.PROJECT_PATH }}
+        run: |
+          dotnet workload config --update-mode workload-set
+          dotnet workload restore ${{ env.PROJECT_PATH }}
 
       - name: Restore dependencies
         run: |
@@ -120,12 +119,10 @@ jobs:
         run: Copy-Item src/firebase-config.json.example src/firebase-config.json
         shell: pwsh
 
-      - name: Update workload manifests
-        run: dotnet workload update
-        shell: pwsh
-
       - name: Restore workloads
-        run: dotnet workload restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-windows10.0.22000.0
+        run: |
+          dotnet workload config --update-mode workload-set
+          dotnet workload restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-windows10.0.22000.0
         shell: pwsh
 
       - name: Restore and build Windows

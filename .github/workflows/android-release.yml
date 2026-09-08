@@ -12,7 +12,7 @@ on:
         default: '1.0.0'
 
 env:
-  DOTNET_VERSION: '9.0.300'
+  DOTNET_VERSION: '9.0.317'
   PROJECT_PATH: 'src/OneTapHabits.csproj'
 
 jobs:
@@ -80,12 +80,10 @@ jobs:
           distribution: microsoft
           java-version: 17
 
-      - name: Update workload manifests
-        run: dotnet workload update
-        shell: pwsh
-
       - name: Restore workloads
-        run: dotnet workload restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-android
+        run: |
+          dotnet workload config --update-mode workload-set
+          dotnet workload restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-android
         shell: pwsh
 
       - name: Restore dependencies
