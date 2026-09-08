@@ -127,9 +127,6 @@ jobs:
           dotnet workload restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-windows10.0.22000.0
         shell: pwsh
 
-      - name: Restore and build Windows
-        run: |
-          dotnet restore src/OneTapHabits.Core/OneTapHabits.Core.csproj
-          dotnet restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-windows10.0.22000.0
-          dotnet build ${{ env.PROJECT_PATH }} -f net9.0-windows10.0.22000.0 -c Debug --no-restore
+      - name: Build Windows
+        run: dotnet build ${{ env.PROJECT_PATH }} -f net9.0-windows10.0.22000.0 -c Debug
         shell: pwsh
