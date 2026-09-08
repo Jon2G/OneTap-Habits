@@ -441,3 +441,4 @@ FodyWeavers.xsd
 *.msm
 *.msp
 .DS_Store
+**/.idea/**
