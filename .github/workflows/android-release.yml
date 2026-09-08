@@ -12,7 +12,7 @@ on:
         default: '1.0.0'
 
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '9.0.203'
   PROJECT_PATH: 'src/OneTapHabits.csproj'
 
 jobs:
@@ -64,10 +64,15 @@ jobs:
           }
         shell: pwsh
 
+      - name: Apply CI SDK pin
+        run: Copy-Item global.ci.json global.json
+        shell: pwsh
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
@@ -75,8 +80,13 @@ jobs:
           distribution: microsoft
           java-version: 17
 
-      - name: Install MAUI workload
-        run: dotnet workload install maui-android
+      - name: Update workload manifests
+        run: dotnet workload update
+        shell: pwsh
+
+      - name: Restore workloads
+        run: dotnet workload restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-android
+        shell: pwsh
 
       - name: Restore dependencies
         run: |

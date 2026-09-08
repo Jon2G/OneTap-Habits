@@ -9,6 +9,8 @@ on:
       - 'global.json'
       - 'global.ci.json'
       - '.github/workflows/ci.yml'
+      - '.github/workflows/android-release.yml'
+      - '.github/workflows/windows-release.yml'
   pull_request:
     paths:
       - 'src/**'
@@ -16,6 +18,8 @@ on:
       - 'global.json'
       - 'global.ci.json'
       - '.github/workflows/ci.yml'
+      - '.github/workflows/android-release.yml'
+      - '.github/workflows/windows-release.yml'
   workflow_dispatch:
 
 concurrency:
@@ -63,6 +67,9 @@ jobs:
         with:
           distribution: microsoft
           java-version: 17
+
+      - name: Update workload manifests
+        run: dotnet workload update
 
       - name: Restore workloads
         run: dotnet workload restore ${{ env.PROJECT_PATH }}
@@ -113,8 +120,13 @@ jobs:
         run: Copy-Item src/firebase-config.json.example src/firebase-config.json
         shell: pwsh
 
-      - name: Install MAUI workload
-        run: dotnet workload install maui-windows
+      - name: Update workload manifests
+        run: dotnet workload update
+        shell: pwsh
+
+      - name: Restore workloads
+        run: dotnet workload restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-windows10.0.22000.0
+        shell: pwsh
 
       - name: Restore and build Windows
         run: |
