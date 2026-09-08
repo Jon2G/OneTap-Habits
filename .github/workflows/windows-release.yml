@@ -37,8 +37,8 @@ jobs:
           }
         shell: pwsh
 
-      - name: Apply CI SDK pin
-        run: Copy-Item global.ci.json global.json
+      - name: Apply MAUI CI SDK pin
+        run: Copy-Item global.maui.ci.json global.json
         shell: pwsh
 
       - name: Setup .NET

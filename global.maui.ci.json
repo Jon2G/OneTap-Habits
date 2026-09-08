@@ -2,6 +2,7 @@
   "sdk": {
     "version": "9.0.317",
     "rollForward": "latestPatch",
-    "allowPrerelease": false
+    "allowPrerelease": false,
+    "workloadVersion": "9.0.317"
   }
 }

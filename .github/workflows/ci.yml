@@ -8,6 +8,7 @@ on:
       - 'tests/**'
       - 'global.json'
       - 'global.ci.json'
+      - 'global.maui.ci.json'
       - '.github/workflows/ci.yml'
       - '.github/workflows/android-release.yml'
       - '.github/workflows/windows-release.yml'
@@ -17,6 +18,7 @@ on:
       - 'tests/**'
       - 'global.json'
       - 'global.ci.json'
+      - 'global.maui.ci.json'
       - '.github/workflows/ci.yml'
       - '.github/workflows/android-release.yml'
       - '.github/workflows/windows-release.yml'
@@ -43,8 +45,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Apply CI SDK pin
-        run: cp global.ci.json global.json
+      - name: Apply MAUI CI SDK pin
+        run: cp global.maui.ci.json global.json
 
       - name: Prepare google-services.json
         run: |
@@ -106,8 +108,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply CI SDK pin
-        run: cp global.ci.json global.json
+      - name: Apply MAUI CI SDK pin
+        run: cp global.maui.ci.json global.json
         shell: bash
 
       - uses: actions/setup-dotnet@v4
@@ -127,6 +129,7 @@ jobs:
 
       - name: Restore and build Windows
         run: |
+          dotnet restore src/OneTapHabits.Core/OneTapHabits.Core.csproj
           dotnet restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-windows10.0.22000.0
           dotnet build ${{ env.PROJECT_PATH }} -f net9.0-windows10.0.22000.0 -c Debug --no-restore
         shell: pwsh
