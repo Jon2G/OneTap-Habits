@@ -1,49 +1,78 @@
 using OneTapHabits.Firestore;
 using OneTapHabits.Models;
+#if ANDROID || IOS
 using Plugin.Firebase.Firestore;
+#endif
 
 namespace OneTapHabits.Services.Firestore;
 
-public sealed class HabitFirestoreDto : IFirestoreObject
+public sealed class HabitFirestoreDto
+#if ANDROID || IOS
+	: IFirestoreObject
+#endif
 {
 	public HabitFirestoreDto()
 	{
 	}
 
+#if ANDROID || IOS
 	[FirestoreProperty("name")]
+#endif
 	public string Name { get; set; } = string.Empty;
 
+#if ANDROID || IOS
 	[FirestoreProperty("color_hex")]
+#endif
 	public string ColorHex { get; set; } = "#4CAF50";
 
+#if ANDROID || IOS
 	[FirestoreProperty("show_in_widget")]
+#endif
 	public bool ShowInWidget { get; set; } = true;
 
+#if ANDROID || IOS
 	[FirestoreProperty("target_days")]
+#endif
 	public List<int> TargetDays { get; set; } = [];
 
+#if ANDROID || IOS
 	[FirestoreProperty("schedule_mode")]
+#endif
 	public int ScheduleMode { get; set; }
 
+#if ANDROID || IOS
 	[FirestoreProperty("times_per_week")]
+#endif
 	public int TimesPerWeek { get; set; } = 1;
 
+#if ANDROID || IOS
 	[FirestoreProperty("times_per_day")]
+#endif
 	public int TimesPerDay { get; set; } = 1;
 
+#if ANDROID || IOS
 	[FirestoreProperty("sort_order")]
+#endif
 	public int SortOrder { get; set; }
 
+#if ANDROID || IOS
 	[FirestoreProperty("reminder_enabled")]
+#endif
 	public bool ReminderEnabled { get; set; }
 
+#if ANDROID || IOS
 	[FirestoreProperty("reminder_time")]
+#endif
 	public string? ReminderTime { get; set; }
 
+#if ANDROID || IOS
 	[FirestoreProperty("created_at")]
+#endif
 	public string CreatedAt { get; set; } = string.Empty;
 
+#if ANDROID || IOS
 	[FirestoreProperty("is_active")]
+#endif
 	public bool IsActive { get; set; } = true;
 
 	public static HabitFirestoreDto FromModel(Habit habit) => new()

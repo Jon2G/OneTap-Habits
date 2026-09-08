@@ -1,23 +1,22 @@
 using OneTapHabits.Calendar;
 using OneTapHabits.Models;
+using OneTapHabits.Services.Firebase;
 using OneTapHabits.Services.Firestore;
-using Plugin.Firebase.Auth;
-using Plugin.Firebase.Firestore;
 
 namespace OneTapHabits.Services;
 
 public sealed class LogService : ILogService
 {
 	private readonly IAuthService _auth;
-	private readonly IFirebaseAuth _firebaseAuth;
-	private readonly IFirebaseFirestore _firestore;
+	private readonly IFirebaseAuthGateway _firebaseAuth;
+	private readonly IFirestoreGateway _firestore;
 	private readonly ILocalGuestStore _guestStore;
 	private readonly ILocalCloudStore _cloudStore;
 
 	public LogService(
 		IAuthService auth,
-		IFirebaseAuth firebaseAuth,
-		IFirebaseFirestore firestore,
+		IFirebaseAuthGateway firebaseAuth,
+		IFirestoreGateway firestore,
 		ILocalGuestStore guestStore,
 		ILocalCloudStore cloudStore)
 	{
@@ -67,6 +66,32 @@ public sealed class LogService : ILogService
 		var userId = RequireUserId();
 		var nextCount = await _cloudStore.IncrementCountAsync(userId, habitId, date);
 		QueueCloudUpsert(habitId, date, nextCount);
+		return nextCount;
+	}
+
+	public async Task<int> DecrementCountAsync(string habitId, DateOnly date)
+	{
+		if (_auth.IsGuest)
+		{
+			var guest = await _guestStore.LoadAsync();
+			var dateKey = date.ToString("yyyy-MM-dd");
+			var current = guest.Logs.FirstOrDefault(l => l.HabitId == habitId && l.Date == dateKey)?.Count ?? 0;
+			var next = Math.Max(0, current - 1);
+			await UpsertGuestCountAsync(guest, habitId, dateKey, next);
+			return next;
+		}
+
+		var userId = RequireUserId();
+		var nextCount = await _cloudStore.DecrementCountAsync(userId, habitId, date);
+		if (nextCount <= 0)
+		{
+			QueueCloudDelete(habitId, date);
+		}
+		else
+		{
+			QueueCloudUpsert(habitId, date, nextCount);
+		}
+
 		return nextCount;
 	}
 
@@ -177,15 +202,15 @@ public sealed class LogService : ILogService
 	private async Task UpsertCloudCountAsync(string habitId, DateOnly date, int count)
 	{
 		var id = HabitLog.CreateId(date, habitId);
-		await CloudLogsCollection()
-			.GetDocument(id)
-			.SetDataAsync(LogFirestoreDto.FromEntry(habitId, date, count));
+		await _firestore.SetDocumentAsync(
+			$"{CloudLogsCollectionPath()}/{id}",
+			LogFirestoreDto.FromEntry(habitId, date, count));
 	}
 
 	private async Task DeleteCloudLogAsync(string habitId, DateOnly date)
 	{
 		var id = HabitLog.CreateId(date, habitId);
-		await CloudLogsCollection().GetDocument(id).DeleteDocumentAsync();
+		await _firestore.DeleteDocumentAsync($"{CloudLogsCollectionPath()}/{id}");
 	}
 
 	private static HabitLog ToLog(string habitId, DateOnly date, bool isCompleted, int count) => new()
@@ -201,9 +226,9 @@ public sealed class LogService : ILogService
 		_firebaseAuth.CurrentUser?.Uid
 		?? throw new InvalidOperationException("User must be signed in.");
 
-	private ICollectionReference CloudLogsCollection()
+	private string CloudLogsCollectionPath()
 	{
 		var userId = RequireUserId();
-		return _firestore.GetCollection($"users/{userId}/logs");
+		return $"users/{userId}/logs";
 	}
 }

@@ -2,6 +2,12 @@
 google-services.json
 **/google-services.json
 !google-services.json.example
+firebase-config.json
+**/firebase-config.json
+!firebase-config.json.example
+firebase-config.json
+**/firebase-config.json
+!firebase-config.json.example
 GoogleService-Info.plist
 **/GoogleService-Info.plist
 !**/GoogleService-Info.plist.example

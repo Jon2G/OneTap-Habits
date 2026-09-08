@@ -65,34 +65,7 @@ public sealed class WidgetRefreshService : IWidgetRefreshService
 	{
 		WidgetTapAnimationStore.Clear(context);
 		var today = DateOnly.FromDateTime(DateTime.Today);
-		var incomplete = habits
-			.Where(h => h.ShowInWidget)
-			.Where(h =>
-			{
-				var count = countMap.TryGetValue(h.Id, out var value) ? value : 0;
-				return !HabitDailyTargetHelper.IsDailyTargetMet(h, count);
-			})
-			.Select(h => new WidgetHabitEntry
-			{
-				Id = h.Id,
-				Name = h.Name,
-				ColorHex = h.ColorHex,
-				Count = countMap.TryGetValue(h.Id, out var count) ? count : 0,
-				TimesPerDay = HabitDailyTargetHelper.GetDailyTarget(h)
-			})
-			.ToList();
-
-		var overflow = Math.Max(0, incomplete.Count - AppWidgets.WidgetConstants.MaxVisibleHabits);
-		var visible = incomplete.Take(AppWidgets.WidgetConstants.MaxVisibleHabits).ToList();
-
-		WidgetSnapshotStore.Save(context, new WidgetSnapshot
-		{
-			IsSignedIn = true,
-			DateIso = today.ToString("O"),
-			Habits = visible,
-			OverflowCount = overflow
-		});
-
+		WidgetSnapshotStore.Save(context, WidgetSnapshotBuilder.Build(habits, countMap, today));
 		AppWidgets.HabitsAppWidgetProvider.UpdateAllWidgets(context);
 	}
 }

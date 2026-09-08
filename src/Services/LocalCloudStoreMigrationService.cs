@@ -1,7 +1,6 @@
 using OneTapHabits.Models;
+using OneTapHabits.Services.Firebase;
 using OneTapHabits.Storage;
-using Plugin.Firebase.Auth;
-using Plugin.Firebase.Firestore;
 
 namespace OneTapHabits.Services;
 
@@ -9,14 +8,14 @@ public sealed class LocalCloudStoreMigrationService : ILocalCloudStoreMigrationS
 {
 	private const string MigrationPrefPrefix = "legacy_firestore_cache_migrated_v1_";
 
-	private readonly IFirebaseAuth _auth;
-	private readonly IFirebaseFirestore _firestore;
+	private readonly IFirebaseAuthGateway _auth;
+	private readonly IFirestoreGateway _firestore;
 	private readonly ILocalCloudStore _cloudStore;
 	private readonly IDiagnosticLogService _diagnosticLog;
 
 	public LocalCloudStoreMigrationService(
-		IFirebaseAuth auth,
-		IFirebaseFirestore firestore,
+		IFirebaseAuthGateway auth,
+		IFirestoreGateway firestore,
 		ILocalCloudStore cloudStore,
 		IDiagnosticLogService diagnosticLog)
 	{

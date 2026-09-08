@@ -1,18 +1,23 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Maui.LifecycleEvents;
 using OneTapHabits.Services;
+using OneTapHabits.Services.Firebase;
 using OneTapHabits.Services.Widget;
 using OneTapHabits.ViewModels;
 using OneTapHabits.Views;
-using Plugin.Firebase.Auth;
-using Plugin.Firebase.Crashlytics;
-using Plugin.Firebase.Firestore;
-using Plugin.LocalNotification;
 
 #if ANDROID
+using Plugin.Firebase.Auth;
+using Plugin.Firebase.Crashlytics;
 using Plugin.Firebase.Core.Platforms.Android;
+using Plugin.Firebase.Firestore;
+using Plugin.LocalNotification;
 #elif IOS
+using Plugin.Firebase.Auth;
 using Plugin.Firebase.Core.Platforms.iOS;
+using Plugin.Firebase.Firestore;
+#elif WINDOWS
+using OneTapHabits.Platforms.Windows.Services;
 #endif
 
 namespace OneTapHabits;
@@ -24,7 +29,9 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+#if ANDROID
 			.UseLocalNotification()
+#endif
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -57,6 +64,13 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IWidgetRefreshService, Platforms.Android.Services.WidgetRefreshService>();
 		builder.Services.AddSingleton<IGoogleSignInService, Platforms.Android.Services.AndroidGoogleSignInService>();
 		builder.Services.AddSingleton<IHabitReminderService, Platforms.Android.Services.AndroidHabitReminderService>();
+#elif WINDOWS
+		builder.Services.AddSingleton<WindowsFirebaseAuthGateway>();
+		builder.Services.AddSingleton<IFirebaseAuthGateway>(sp => sp.GetRequiredService<WindowsFirebaseAuthGateway>());
+		builder.Services.AddSingleton<IFirestoreGateway, WindowsFirestoreGateway>();
+		builder.Services.AddSingleton<IWidgetRefreshService, Platforms.Windows.Services.WindowsWidgetRefreshService>();
+		builder.Services.AddSingleton<IGoogleSignInService, WindowsGoogleSignInService>();
+		builder.Services.AddSingleton<IHabitReminderService, NoOpHabitReminderService>();
 #else
 		builder.Services.AddSingleton<IWidgetRefreshService, NoOpWidgetRefreshService>();
 		builder.Services.AddSingleton<IGoogleSignInService, NoOpGoogleSignInService>();
@@ -101,8 +115,13 @@ public static class MauiProgram
 #endif
 		});
 
+#if ANDROID || IOS
 		builder.Services.AddSingleton(_ => CrossFirebaseAuth.Current);
 		builder.Services.AddSingleton(_ => CrossFirebaseFirestore.Current);
+		builder.Services.AddSingleton<IFirebaseAuthGateway, PluginFirebaseAuthGateway>();
+		builder.Services.AddSingleton<IFirestoreGateway, PluginFirestoreGateway>();
+#endif
+
 		return builder;
 	}
 

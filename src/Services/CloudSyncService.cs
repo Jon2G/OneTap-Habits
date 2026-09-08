@@ -1,23 +1,22 @@
 using CommunityToolkit.Mvvm.Messaging;
 using OneTapHabits.Messages;
-using Plugin.Firebase.Auth;
-using Plugin.Firebase.Firestore;
+using OneTapHabits.Services.Firebase;
 
 namespace OneTapHabits.Services;
 
 public sealed class CloudSyncService : ICloudSyncService
 {
 	private readonly IAuthService _auth;
-	private readonly IFirebaseAuth _firebaseAuth;
-	private readonly IFirebaseFirestore _firestore;
+	private readonly IFirebaseAuthGateway _firebaseAuth;
+	private readonly IFirestoreGateway _firestore;
 	private readonly ILocalCloudStore _cloudStore;
 	private readonly IDiagnosticLogService _diagnosticLog;
 	private int _syncRunning;
 
 	public CloudSyncService(
 		IAuthService auth,
-		IFirebaseAuth firebaseAuth,
-		IFirebaseFirestore firestore,
+		IFirebaseAuthGateway firebaseAuth,
+		IFirestoreGateway firestore,
 		ILocalCloudStore cloudStore,
 		IDiagnosticLogService diagnosticLog)
 	{

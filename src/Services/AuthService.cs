@@ -1,16 +1,16 @@
-using Plugin.Firebase.Auth;
+using OneTapHabits.Services.Firebase;
 
 namespace OneTapHabits.Services;
 
 public sealed class AuthService : IAuthService
 {
-	private readonly IFirebaseAuth _firebaseAuth;
+	private readonly IFirebaseAuthGateway _firebaseAuth;
 	private readonly IGoogleSignInService _googleSignInService;
 	private readonly IGuestDataSyncService _guestDataSyncService;
 	private readonly ILocalCloudStore _cloudStore;
 
 	public AuthService(
-		IFirebaseAuth firebaseAuth,
+		IFirebaseAuthGateway firebaseAuth,
 		IGoogleSignInService googleSignInService,
 		IGuestDataSyncService guestDataSyncService,
 		ILocalCloudStore cloudStore)

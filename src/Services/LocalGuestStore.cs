@@ -97,20 +97,38 @@ public sealed class LocalGuestStore : ILocalGuestStore
 	{
 		var filePath = GetFilePath(appDataDirectory);
 		var snapshot = LoadFromPath(filePath);
+		var next = AdjustCount(snapshot, habitId, date, 1);
+		SaveToPath(filePath, snapshot);
+		return next;
+	}
+
+	public static int DecrementCount(string appDataDirectory, string habitId, DateOnly date)
+	{
+		var filePath = GetFilePath(appDataDirectory);
+		var snapshot = LoadFromPath(filePath);
+		var next = AdjustCount(snapshot, habitId, date, -1);
+		SaveToPath(filePath, snapshot);
+		return next;
+	}
+
+	private static int AdjustCount(GuestDataSnapshot snapshot, string habitId, DateOnly date, int delta)
+	{
 		var dateKey = date.ToString("yyyy-MM-dd");
-		var existing = snapshot.Logs.FirstOrDefault(l => l.HabitId == habitId && l.Date == dateKey);
-		var next = (existing?.Count ?? 0) + 1;
+		var current = snapshot.Logs.FirstOrDefault(l => l.HabitId == habitId && l.Date == dateKey)?.Count ?? 0;
+		var next = Math.Max(0, current + delta);
 
 		snapshot.Logs.RemoveAll(l => l.HabitId == habitId && l.Date == dateKey);
-		snapshot.Logs.Add(new GuestLogEntry
+		if (next > 0)
 		{
-			HabitId = habitId,
-			Date = dateKey,
-			IsCompleted = true,
-			Count = next
-		});
+			snapshot.Logs.Add(new GuestLogEntry
+			{
+				HabitId = habitId,
+				Date = dateKey,
+				IsCompleted = true,
+				Count = next
+			});
+		}
 
-		SaveToPath(filePath, snapshot);
 		return next;
 	}
 }

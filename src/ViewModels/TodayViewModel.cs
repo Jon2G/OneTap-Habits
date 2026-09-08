@@ -256,6 +256,26 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	}
 
 	[RelayCommand]
+	private async Task DecrementHabitAsync(TodayHabitItem item)
+	{
+		if (item.TodayCount <= 0)
+		{
+			return;
+		}
+
+		var next = await _logService.DecrementCountAsync(item.Habit.Id, SelectedDate);
+		ReplaceHabitCount(item.Habit.Id, next);
+		_ = RefreshHabitsInBackgroundAsync();
+		if (IsViewingToday)
+		{
+			var today = DateOnly.FromDateTime(DateTime.Today);
+			var habits = await _habitService.GetTodayHabitsAsync(today);
+			var countMap = await _logService.GetCountMapForDateAsync(today);
+			await _widgetRefresh.RefreshAsync(habits, countMap);
+		}
+	}
+
+	[RelayCommand]
 	private async Task UndoHabitAsync(TodayHabitItem item)
 	{
 		if (item.TodayCount <= 0)
@@ -313,7 +333,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 			existing.StreakLabel,
 			secondaryLabel,
 			IncrementHabitCommand,
-			UndoHabitCommand,
+			DecrementHabitCommand,
 			EditHabitCommand,
 			DeleteHabitCommand,
 			existing.EditLabel,
@@ -344,7 +364,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 			StreakPlaceholder,
 			secondaryLabel,
 			IncrementHabitCommand,
-			UndoHabitCommand,
+			DecrementHabitCommand,
 			EditHabitCommand,
 			DeleteHabitCommand,
 			editLabel,
@@ -393,7 +413,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 			primaryLabel,
 			secondaryLabel,
 			IncrementHabitCommand,
-			UndoHabitCommand,
+			DecrementHabitCommand,
 			EditHabitCommand,
 			DeleteHabitCommand,
 			editLabel,
@@ -462,7 +482,7 @@ public sealed class TodayHabitItem(
 	string streakLabel,
 	string completedLabel,
 	ICommand incrementCommand,
-	ICommand undoCommand,
+	ICommand decrementCommand,
 	ICommand editCommand,
 	ICommand deleteCommand,
 	string editLabel,
@@ -475,7 +495,7 @@ public sealed class TodayHabitItem(
 	public string StreakLabel { get; } = streakLabel;
 	public string CompletedLabel { get; } = completedLabel;
 	public ICommand IncrementCommand { get; } = incrementCommand;
-	public ICommand UndoCommand { get; } = undoCommand;
+	public ICommand DecrementCommand { get; } = decrementCommand;
 	public ICommand EditCommand { get; } = editCommand;
 	public ICommand DeleteCommand { get; } = deleteCommand;
 	public string EditLabel { get; } = editLabel;

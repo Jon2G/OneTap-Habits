@@ -1,4 +1,3 @@
-using Android.App;
 using Android.Content;
 
 namespace OneTapHabits.Platforms.Android.AppWidgets;
@@ -6,7 +5,7 @@ namespace OneTapHabits.Platforms.Android.AppWidgets;
 [BroadcastReceiver(
 	Name = WidgetConstants.PackageName + ".AppWidgets.WidgetTapReceiver",
 	Exported = false)]
-[IntentFilter(new[] { WidgetConstants.ActionCompleteHabit })]
+[global::Android.App.IntentFilter(new[] { WidgetConstants.ActionCompleteHabit })]
 [Microsoft.Maui.Controls.Internals.Preserve(AllMembers = true)]
 public class WidgetTapReceiver : BroadcastReceiver
 {
@@ -23,9 +22,18 @@ public class WidgetTapReceiver : BroadcastReceiver
 			return;
 		}
 
+		var isDecrement = intent.Data?.Path?.EndsWith("/decrement", StringComparison.Ordinal) == true;
+
 		try
 		{
-			Services.WidgetCompletionService.IncrementHabitAsync(context, habitId);
+			if (isDecrement)
+			{
+				Services.WidgetCompletionService.DecrementHabitAsync(context, habitId);
+			}
+			else
+			{
+				Services.WidgetCompletionService.IncrementHabitAsync(context, habitId);
+			}
 		}
 		catch
 		{

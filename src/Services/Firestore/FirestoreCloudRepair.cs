@@ -1,3 +1,4 @@
+#if ANDROID || IOS
 using OneTapHabits.Services;
 using OneTapHabits.Services.Firestore;
 using Plugin.Firebase.Firestore;
@@ -58,3 +59,4 @@ public static class FirestoreCloudRepair
 		return deleted;
 	}
 }
+#endif

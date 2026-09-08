@@ -1,22 +1,21 @@
 using OneTapHabits.Models;
+using OneTapHabits.Services.Firebase;
 using OneTapHabits.Services.Firestore;
-using Plugin.Firebase.Auth;
-using Plugin.Firebase.Firestore;
 
 namespace OneTapHabits.Services;
 
 public sealed class HabitService : IHabitService
 {
 	private readonly IAuthService _auth;
-	private readonly IFirebaseAuth _firebaseAuth;
-	private readonly IFirebaseFirestore _firestore;
+	private readonly IFirebaseAuthGateway _firebaseAuth;
+	private readonly IFirestoreGateway _firestore;
 	private readonly ILocalGuestStore _guestStore;
 	private readonly ILocalCloudStore _cloudStore;
 
 	public HabitService(
 		IAuthService auth,
-		IFirebaseAuth firebaseAuth,
-		IFirebaseFirestore firestore,
+		IFirebaseAuthGateway firebaseAuth,
+		IFirestoreGateway firestore,
 		ILocalGuestStore guestStore,
 		ILocalCloudStore cloudStore)
 	{
@@ -147,9 +146,9 @@ public sealed class HabitService : IHabitService
 		{
 			try
 			{
-				await CloudHabitsCollection()
-					.GetDocument(habit.Id)
-					.SetDataAsync(HabitFirestoreDto.FromModel(habit));
+				await _firestore.SetDocumentAsync(
+					$"{CloudHabitsCollectionPath()}/{habit.Id}",
+					HabitFirestoreDto.FromModel(habit));
 			}
 			catch
 			{
@@ -176,9 +175,9 @@ public sealed class HabitService : IHabitService
 		_firebaseAuth.CurrentUser?.Uid
 		?? throw new InvalidOperationException("User must be signed in.");
 
-	private ICollectionReference CloudHabitsCollection()
+	private string CloudHabitsCollectionPath()
 	{
 		var userId = RequireUserId();
-		return _firestore.GetCollection($"users/{userId}/habits");
+		return $"users/{userId}/habits";
 	}
 }

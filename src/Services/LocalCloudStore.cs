@@ -91,6 +91,18 @@ public sealed class LocalCloudStore : ILocalCloudStore
 		}
 	}
 
+	public Task<int> DecrementCountAsync(string userId, string habitId, DateOnly date, CancellationToken cancellationToken = default)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		lock (_lock)
+		{
+			var file = CloudCachePersistence.LoadFromPath(_filePath);
+			var next = CloudCachePersistence.DecrementCount(file, userId, habitId, date);
+			CloudCachePersistence.SaveToPath(_filePath, file);
+			return Task.FromResult(next);
+		}
+	}
+
 	public Task SetCountAsync(string userId, string habitId, DateOnly date, int count, CancellationToken cancellationToken = default)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
@@ -165,6 +177,15 @@ public sealed class LocalCloudStore : ILocalCloudStore
 		var filePath = CloudCachePersistence.GetFilePath(appDataDirectory);
 		var file = CloudCachePersistence.LoadFromPath(filePath);
 		var next = CloudCachePersistence.IncrementCount(file, userId, habitId, date);
+		CloudCachePersistence.SaveToPath(filePath, file);
+		return next;
+	}
+
+	public static int DecrementCount(string appDataDirectory, string userId, string habitId, DateOnly date)
+	{
+		var filePath = CloudCachePersistence.GetFilePath(appDataDirectory);
+		var file = CloudCachePersistence.LoadFromPath(filePath);
+		var next = CloudCachePersistence.DecrementCount(file, userId, habitId, date);
 		CloudCachePersistence.SaveToPath(filePath, file);
 		return next;
 	}

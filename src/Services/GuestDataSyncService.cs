@@ -1,14 +1,13 @@
 using OneTapHabits.Models;
+using OneTapHabits.Services.Firebase;
 using OneTapHabits.Services.Firestore;
-using Plugin.Firebase.Auth;
-using Plugin.Firebase.Firestore;
 
 namespace OneTapHabits.Services;
 
 public sealed class GuestDataSyncService : IGuestDataSyncService
 {
-	private readonly IFirebaseAuth _auth;
-	private readonly IFirebaseFirestore _firestore;
+	private readonly IFirebaseAuthGateway _auth;
+	private readonly IFirestoreGateway _firestore;
 	private readonly ILocalGuestStore _guestStore;
 	private readonly ILocalCloudStore _cloudStore;
 	private readonly IDiagnosticLogService _diagnosticLog;
@@ -16,8 +15,8 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 	private IReadOnlyList<GuestLogEntry> _lastCloudLogs = [];
 
 	public GuestDataSyncService(
-		IFirebaseAuth auth,
-		IFirebaseFirestore firestore,
+		IFirebaseAuthGateway auth,
+		IFirestoreGateway firestore,
 		ILocalGuestStore guestStore,
 		ILocalCloudStore cloudStore,
 		IDiagnosticLogService diagnosticLog)
@@ -130,8 +129,8 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		GuestDataSnapshot guest,
 		CancellationToken cancellationToken)
 	{
-		await DeleteAllDocumentsAsync(HabitsCollection(userId), cancellationToken);
-		await DeleteAllDocumentsAsync(LogsCollection(userId), cancellationToken);
+		await DeleteAllDocumentsAsync(HabitsCollectionPath(userId), cancellationToken);
+		await DeleteAllDocumentsAsync(LogsCollectionPath(userId), cancellationToken);
 
 		var habits = guest.Habits.Where(h => h.IsActive).ToList();
 		var logs = guest.Logs.Where(l => l.IsCompleted || l.Count > 0).ToList();
@@ -140,15 +139,15 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		await UploadLogsAsync(userId, logs, cancellationToken);
 	}
 
-	private static async Task DeleteAllDocumentsAsync(
-		ICollectionReference collection,
+	private async Task DeleteAllDocumentsAsync(
+		string collectionPath,
 		CancellationToken cancellationToken)
 	{
-		var snapshot = await collection.GetDocumentsAsync<Dictionary<string, object>>();
-		foreach (var document in snapshot.Documents)
+		var snapshot = await _firestore.GetDocumentsAsync<Dictionary<string, object>>(collectionPath, cancellationToken);
+		foreach (var document in snapshot)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			await document.Reference.DeleteDocumentAsync();
+			await _firestore.DeleteDocumentAsync($"{collectionPath}/{document.Id}", cancellationToken);
 		}
 	}
 
@@ -160,9 +159,10 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 		foreach (var habit in habits)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			await HabitsCollection(userId)
-				.GetDocument(habit.Id)
-				.SetDataAsync(HabitFirestoreDto.FromModel(habit));
+			await _firestore.SetDocumentAsync(
+				$"{HabitsCollectionPath(userId)}/{habit.Id}",
+				HabitFirestoreDto.FromModel(habit),
+				cancellationToken);
 		}
 	}
 
@@ -181,17 +181,16 @@ public sealed class GuestDataSyncService : IGuestDataSyncService
 
 			var logId = HabitLog.CreateId(date, log.HabitId);
 			var count = log.Count > 0 ? log.Count : 1;
-			await LogsCollection(userId)
-				.GetDocument(logId)
-				.SetDataAsync(LogFirestoreDto.FromEntry(log.HabitId, date, count));
+			await _firestore.SetDocumentAsync(
+				$"{LogsCollectionPath(userId)}/{logId}",
+				LogFirestoreDto.FromEntry(log.HabitId, date, count),
+				cancellationToken);
 		}
 	}
 
-	private ICollectionReference HabitsCollection(string userId) =>
-		_firestore.GetCollection($"users/{userId}/habits");
+	private static string HabitsCollectionPath(string userId) => $"users/{userId}/habits";
 
-	private ICollectionReference LogsCollection(string userId) =>
-		_firestore.GetCollection($"users/{userId}/logs");
+	private static string LogsCollectionPath(string userId) => $"users/{userId}/logs";
 
 	private static string MaskUserId(string userId) =>
 		userId.Length <= 8 ? $"{userId}..." : $"{userId[..8]}...";

@@ -36,6 +36,19 @@ public class CloudCachePersistenceTests
 	}
 
 	[Fact]
+	public void DecrementCount_FloorsAtZero()
+	{
+		var file = new CloudCacheFile();
+		CloudCachePersistence.IncrementCount(file, "user1", "h1", new DateOnly(2026, 6, 30));
+		CloudCachePersistence.IncrementCount(file, "user1", "h1", new DateOnly(2026, 6, 30));
+		var decremented = CloudCachePersistence.DecrementCount(file, "user1", "h1", new DateOnly(2026, 6, 30));
+		Assert.Equal(1, decremented);
+		Assert.Equal(1, CloudCachePersistence.GetCount(file, "user1", "h1", new DateOnly(2026, 6, 30)));
+		CloudCachePersistence.DecrementCount(file, "user1", "h1", new DateOnly(2026, 6, 30));
+		Assert.Equal(0, CloudCachePersistence.GetCount(file, "user1", "h1", new DateOnly(2026, 6, 30)));
+	}
+
+	[Fact]
 	public void MergeFromCloud_PreservesLocalHabits_WhenCloudHabitsEmpty()
 	{
 		var file = new CloudCacheFile();

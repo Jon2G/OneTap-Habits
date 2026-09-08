@@ -65,6 +65,13 @@ public static class CloudCachePersistence
 		return next;
 	}
 
+	public static int DecrementCount(CloudCacheFile file, string userId, string habitId, DateOnly date)
+	{
+		var next = Math.Max(0, GetCount(file, userId, habitId, date) - 1);
+		SetCount(file, userId, habitId, date, next);
+		return next;
+	}
+
 	public static void SetCount(CloudCacheFile file, string userId, string habitId, DateOnly date, int count)
 	{
 		var user = FindOrCreateUser(file, userId);

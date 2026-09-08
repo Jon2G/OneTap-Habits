@@ -11,6 +11,7 @@ Configure in **Settings → Secrets and variables → Actions**:
 | `ANDROID_KEYSTORE_BASE64` | Base64-encoded release keystore |
 | `ANDROID_SIGNING_PASSWORD` | Keystore + key password |
 | `GOOGLE_SERVICES_JSON_BASE64` | CI Firebase Android config |
+| `FIREBASE_CONFIG_JSON_BASE64` | CI Firebase Windows config (`firebase-config.json`) |
 | `FIREBASE_TOKEN` or `FIREBASE_SERVICE_ACCOUNT` | Deploy Firestore rules |
 
 ## Keystore (one-time, local)
@@ -48,7 +49,17 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-`android-release.yml` publishes `OneTapHabits-v1.0.0.apk` to GitHub Releases.
+`android-release.yml` publishes `OneTapHabits-vX.Y.Z.apk` to GitHub Releases.
+
+`windows-release.yml` publishes `OneTapHabits-vX.Y.Z.msix` on the same `v*` tag (requires `maui-windows` on `windows-latest`).
+
+## v1.3.0 highlights
+
+- **Windows MAUI** target (`net9.0-windows10.0.22000.0`) with MSIX packaging
+- **Firestore REST + Google OAuth** on Windows (Plugin.Firebase remains Android/iOS)
+- **Tap-to-decrement** on Today (long-press) and Android widget (tap `x/n` progress)
+- **Widget tap animation** `+1` / `-1` / complete feedback on Android; shared animation model in Core
+- **WidgetHost** project scaffold for Windows 11 Widget Board (COM provider follow-up)
 
 ## Post-release
 

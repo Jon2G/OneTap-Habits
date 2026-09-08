@@ -18,6 +18,8 @@ public interface ILocalCloudStore
 
 	Task<int> IncrementCountAsync(string userId, string habitId, DateOnly date, CancellationToken cancellationToken = default);
 
+	Task<int> DecrementCountAsync(string userId, string habitId, DateOnly date, CancellationToken cancellationToken = default);
+
 	Task SetCountAsync(string userId, string habitId, DateOnly date, int count, CancellationToken cancellationToken = default);
 
 	Task<IReadOnlyDictionary<string, int>> GetCountMapForDateAsync(

@@ -1,20 +1,19 @@
 using OneTapHabits.Models;
+using OneTapHabits.Services.Firebase;
 using OneTapHabits.Services.Firestore;
-using Plugin.Firebase.Auth;
-using Plugin.Firebase.Firestore;
 
 namespace OneTapHabits.Services;
 
 public sealed class CloudRestoreService : ICloudRestoreService
 {
-	private readonly IFirebaseAuth _auth;
-	private readonly IFirebaseFirestore _firestore;
+	private readonly IFirebaseAuthGateway _auth;
+	private readonly IFirestoreGateway _firestore;
 	private readonly ILocalCloudStore _cloudStore;
 	private readonly IDiagnosticLogService _diagnosticLog;
 
 	public CloudRestoreService(
-		IFirebaseAuth auth,
-		IFirebaseFirestore firestore,
+		IFirebaseAuthGateway auth,
+		IFirestoreGateway firestore,
 		ILocalCloudStore cloudStore,
 		IDiagnosticLogService diagnosticLog)
 	{
@@ -44,9 +43,10 @@ public sealed class CloudRestoreService : ICloudRestoreService
 		foreach (var habit in habits)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			await HabitsCollection(userId)
-				.GetDocument(habit.Id)
-				.SetDataAsync(HabitFirestoreDto.FromModel(habit));
+			await _firestore.SetDocumentAsync(
+				$"users/{userId}/habits/{habit.Id}",
+				HabitFirestoreDto.FromModel(habit),
+				cancellationToken);
 		}
 
 		var logsUploaded = 0;
@@ -60,9 +60,10 @@ public sealed class CloudRestoreService : ICloudRestoreService
 
 			var logId = HabitLog.CreateId(date, log.HabitId);
 			var count = log.Count > 0 ? log.Count : 1;
-			await LogsCollection(userId)
-				.GetDocument(logId)
-				.SetDataAsync(LogFirestoreDto.FromEntry(log.HabitId, date, count));
+			await _firestore.SetDocumentAsync(
+				$"users/{userId}/logs/{logId}",
+				LogFirestoreDto.FromEntry(log.HabitId, date, count),
+				cancellationToken);
 			logsUploaded++;
 		}
 
@@ -76,12 +77,6 @@ public sealed class CloudRestoreService : ICloudRestoreService
 			LogsUploaded = logsUploaded
 		};
 	}
-
-	private ICollectionReference HabitsCollection(string userId) =>
-		_firestore.GetCollection($"users/{userId}/habits");
-
-	private ICollectionReference LogsCollection(string userId) =>
-		_firestore.GetCollection($"users/{userId}/logs");
 
 	private static string MaskUserId(string userId) =>
 		userId.Length <= 8 ? $"{userId}..." : $"{userId[..8]}...";

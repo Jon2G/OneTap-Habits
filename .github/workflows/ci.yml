@@ -92,3 +92,32 @@ jobs:
 
       - name: Test
         run: dotnet test tests/OneTapHabits.Tests/OneTapHabits.Tests.csproj -c Release --verbosity minimal
+
+  build-windows:
+    name: Build MAUI Windows
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply CI SDK pin
+        run: cp global.ci.json global.json
+        shell: bash
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
+
+      - name: Prepare firebase-config.json
+        run: Copy-Item src/firebase-config.json.example src/firebase-config.json
+        shell: pwsh
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui-windows
+
+      - name: Restore and build Windows
+        run: |
+          dotnet restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-windows10.0.22000.0
+          dotnet build ${{ env.PROJECT_PATH }} -f net9.0-windows10.0.22000.0 -c Debug --no-restore
+        shell: pwsh

@@ -8,6 +8,7 @@ using Android.Widget;
 using OneTapHabits.Models;
 using OneTapHabits.Platforms.Android.Services;
 using OneTapHabits.Services.Widget;
+using OneTapHabits.Widget;
 
 namespace OneTapHabits.Platforms.Android.AppWidgets;
 
@@ -104,6 +105,10 @@ public static class WidgetRemoteViewsBuilder
 			}
 
 			views.SetOnClickPendingIntent(CellIds[i], CreateCompleteIntent(context, habit.Id, i));
+			if (progressText is not null && habit.Count > 0)
+			{
+				views.SetOnClickPendingIntent(ProgressIds[i], CreateDecrementIntent(context, habit.Id, i + 200));
+			}
 		}
 
 		if (snapshot.OverflowCount > 0)
@@ -152,10 +157,16 @@ public static class WidgetRemoteViewsBuilder
 		{
 			WidgetTapAnimationKind.Complete => context.GetString(Resource.String.widget_tap_complete)!,
 			WidgetTapAnimationKind.PlusOne => context.GetString(Resource.String.widget_tap_plus_one)!,
+			WidgetTapAnimationKind.MinusOne => context.GetString(Resource.String.widget_tap_minus_one)!,
 			_ => "+1"
 		};
 
-		var textSizeSp = kind == WidgetTapAnimationKind.Complete ? 26f : 22f;
+		var textSizeSp = kind switch
+		{
+			WidgetTapAnimationKind.Complete => 26f,
+			WidgetTapAnimationKind.MinusOne => 22f,
+			_ => 22f
+		};
 		views.SetTextViewText(NameIds[cellIndex], feedbackText);
 		views.SetTextViewTextSize(NameIds[cellIndex], (int)ComplexUnitType.Sp, textSizeSp);
 		views.SetTextColor(NameIds[cellIndex], global::Android.Graphics.Color.ParseColor(CompleteGreenHex));
@@ -211,6 +222,17 @@ public static class WidgetRemoteViewsBuilder
 
 		var flags = PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable;
 		return PendingIntent.GetBroadcast(context, requestCode + 100, intent, flags);
+	}
+
+	private static PendingIntent? CreateDecrementIntent(Context context, string habitId, int requestCode)
+	{
+		var intent = new Intent(WidgetConstants.ActionCompleteHabit);
+		intent.SetComponent(new ComponentName(context, WidgetConstants.PackageName + ".AppWidgets.WidgetTapReceiver"));
+		intent.PutExtra(WidgetConstants.ExtraHabitId, habitId);
+		intent.SetData(global::Android.Net.Uri.Parse($"onetaphabits://habit/{habitId}/decrement"));
+
+		var flags = PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable;
+		return PendingIntent.GetBroadcast(context, requestCode + 300, intent, flags);
 	}
 
 	private static PendingIntent? CreateOpenAppIntent(Context context)

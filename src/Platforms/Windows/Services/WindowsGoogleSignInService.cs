@@ -1,0 +1,87 @@
+#if WINDOWS
+using System.Net.Http.Json;
+using System.Security.Cryptography;
+using OneTapHabits.Services;
+using OneTapHabits.Services.Firebase;
+
+namespace OneTapHabits.Platforms.Windows.Services;
+
+public sealed class WindowsGoogleSignInService : IGoogleSignInService
+{
+	private const string RedirectUri = "http://127.0.0.1:53123/";
+
+	private readonly WindowsFirebaseAuthGateway _authGateway;
+	private readonly IDiagnosticLogService _diagnosticLog;
+
+	public WindowsGoogleSignInService(
+		WindowsFirebaseAuthGateway authGateway,
+		IDiagnosticLogService diagnosticLog)
+	{
+		_authGateway = authGateway;
+		_diagnosticLog = diagnosticLog;
+	}
+
+	public bool IsSupported => !string.IsNullOrWhiteSpace(FirebaseConfig.Load().WebClientId);
+
+	public async Task AuthenticateAsync(CancellationToken cancellationToken = default)
+	{
+		var config = FirebaseConfig.Load();
+		if (string.IsNullOrWhiteSpace(config.WebClientId) || string.IsNullOrWhiteSpace(config.ApiKey))
+		{
+			throw new InvalidOperationException(
+				"Google Sign-In is not configured. Add firebase-config.json with apiKey and webClientId.");
+		}
+
+		var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16));
+		var authUrl = new Uri(
+			"https://accounts.google.com/o/oauth2/v2/auth" +
+			$"?client_id={Uri.EscapeDataString(config.WebClientId)}" +
+			$"&redirect_uri={Uri.EscapeDataString(RedirectUri)}" +
+			"&response_type=id_token" +
+			"&scope=openid%20email%20profile" +
+			$"&nonce={Uri.EscapeDataString(nonce)}");
+
+		_diagnosticLog.LogInfo("GoogleSignIn", "Launching Windows browser OAuth flow.");
+		var result = await WebAuthenticator.Default.AuthenticateAsync(authUrl, new Uri(RedirectUri));
+		if (!result.Properties.TryGetValue("id_token", out var idToken) || string.IsNullOrWhiteSpace(idToken))
+		{
+			throw new InvalidOperationException("Google Sign-In did not return an id_token.");
+		}
+
+		using var http = new HttpClient();
+		var payload = new
+		{
+			postBody = $"id_token={Uri.EscapeDataString(idToken)}&providerId=google.com",
+			requestUri = "http://localhost",
+			returnSecureToken = true,
+			returnIdpCredential = true
+		};
+
+		var response = await http.PostAsJsonAsync(
+			$"https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key={config.ApiKey}",
+			payload,
+			cancellationToken);
+		response.EnsureSuccessStatusCode();
+		var session = await response.Content.ReadFromJsonAsync<FirebaseSignInResponse>(cancellationToken: cancellationToken)
+			?? throw new InvalidOperationException("Firebase sign-in failed.");
+
+		if (string.IsNullOrWhiteSpace(session.LocalId) || string.IsNullOrWhiteSpace(session.IdToken))
+		{
+			throw new InvalidOperationException("Firebase sign-in did not return a user.");
+		}
+
+		_authGateway.SetSession(
+			new FirebaseUserInfo { Uid = session.LocalId, Email = session.Email },
+			session.IdToken,
+			session.RefreshToken ?? string.Empty);
+	}
+
+	private sealed class FirebaseSignInResponse
+	{
+		public string LocalId { get; set; } = string.Empty;
+		public string? Email { get; set; }
+		public string IdToken { get; set; } = string.Empty;
+		public string? RefreshToken { get; set; }
+	}
+}
+#endif

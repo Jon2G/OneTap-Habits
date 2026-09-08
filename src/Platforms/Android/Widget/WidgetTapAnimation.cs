@@ -1,11 +1,6 @@
-namespace OneTapHabits.Platforms.Android.AppWidgets;
+using OneTapHabits.Widget;
 
-public enum WidgetTapAnimationKind
-{
-	None = 0,
-	PlusOne = 1,
-	Complete = 2
-}
+namespace OneTapHabits.Platforms.Android.AppWidgets;
 
 public sealed class WidgetTapAnimation
 {
