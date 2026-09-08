@@ -13,6 +13,8 @@ GoogleService-Info.plist
 !**/GoogleService-Info.plist.example
 *.keystore
 keystore_base64.txt
+windows-signing.pfx
+windows-signing.cer
 
 # Rider — keep shared run configs, ignore user workspace state
 **/.idea/**/workspace.xml

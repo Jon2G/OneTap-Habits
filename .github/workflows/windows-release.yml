@@ -59,6 +59,18 @@ jobs:
           dotnet restore src/OneTapHabits.Core/OneTapHabits.Core.csproj
         shell: pwsh
 
+      - name: Prepare signing certificate
+        run: |
+          $secret = "${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}"
+          if (-not [string]::IsNullOrWhiteSpace($secret)) {
+            [IO.File]::WriteAllBytes("src/windows-signing.pfx", [Convert]::FromBase64String($secret))
+            Write-Host "windows-signing.pfx created from secret."
+          } else {
+            Write-Error "WINDOWS_SIGNING_PFX_BASE64 secret is required for signed MSIX releases."
+            exit 1
+          }
+        shell: pwsh
+
       - name: Get version from tag
         id: get_version
         run: |
@@ -75,8 +87,10 @@ jobs:
           $ver = "${{ steps.get_version.outputs.VERSION }}"
           $parts = $ver -split '\.'
           $vc = [int]$parts[0] * 10000 + [int]$parts[1] * 100 + [int]$parts[2]
-          dotnet publish ${{ env.PROJECT_PATH }} -f net9.0-windows10.0.22000.0 -c Release -p:ApplicationVersion=$vc -p:ApplicationDisplayVersion=$ver -p:WindowsPackageType=MSIX
+          dotnet publish ${{ env.PROJECT_PATH }} -f net9.0-windows10.0.22000.0 -c Release -p:ApplicationVersion=$vc -p:ApplicationDisplayVersion=$ver -p:WindowsPackageType=MSIX -p:AppxPackageSigningEnabled=true -p:PackageCertificateKeyFile=windows-signing.pfx -p:PackageCertificatePassword=$env:WINDOWS_SIGNING_PASSWORD
         shell: pwsh
+        env:
+          WINDOWS_SIGNING_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
 
       - name: Collect MSIX artifacts
         run: |
@@ -86,10 +100,19 @@ jobs:
             Write-Error "MSIX not found after publish."
             exit 1
           }
+          $sig = Get-AuthenticodeSignature $msix.FullName
+          if ($sig.Status -ne 'Valid') {
+            Write-Error "MSIX signature is not valid: $($sig.Status)"
+            exit 1
+          }
           $dest = "./artifacts/OneTapHabits-v${{ steps.get_version.outputs.VERSION }}.msix"
           Copy-Item $msix.FullName $dest
-          Write-Host "Published MSIX: $dest"
+          $pfx = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('src/windows-signing.pfx', $env:WINDOWS_SIGNING_PASSWORD, 'Exportable')
+          Export-Certificate -Cert $pfx -FilePath ./artifacts/OneTapHabits-windows-signing.cer | Out-Null
+          Write-Host "Published signed MSIX: $dest"
         shell: pwsh
+        env:
+          WINDOWS_SIGNING_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
 
       - name: Upload MSIX Artifact
         uses: actions/upload-artifact@v4
@@ -105,6 +128,8 @@ jobs:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref_name }}
           name: OneTap Habits v${{ steps.get_version.outputs.VERSION }}
           generate_release_notes: true
-          files: ./artifacts/*.msix
+          files: |
+            ./artifacts/*.msix
+            ./artifacts/*.cer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

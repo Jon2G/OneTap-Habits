@@ -12,6 +12,8 @@ Configure in **Settings → Secrets and variables → Actions**:
 | `ANDROID_SIGNING_PASSWORD` | Keystore + key password |
 | `GOOGLE_SERVICES_JSON_BASE64` | CI Firebase Android config |
 | `FIREBASE_CONFIG_JSON_BASE64` | CI Firebase Windows config (`firebase-config.json`) |
+| `WINDOWS_SIGNING_PFX_BASE64` | Base64-encoded MSIX signing PFX (`CN=Jon2G`) |
+| `WINDOWS_SIGNING_PASSWORD` | Password for the Windows signing PFX |
 | `FIREBASE_TOKEN` or `FIREBASE_SERVICE_ACCOUNT` | Deploy Firestore rules |
 
 ## Keystore (one-time, local)
@@ -51,7 +53,22 @@ git push origin v1.0.0
 
 `android-release.yml` publishes `OneTapHabits-vX.Y.Z.apk` to GitHub Releases.
 
-`windows-release.yml` publishes `OneTapHabits-vX.Y.Z.msix` on the same `v*` tag (requires `maui-windows` on `windows-latest`).
+`windows-release.yml` publishes signed `OneTapHabits-vX.Y.Z.msix` plus `OneTapHabits-windows-signing.cer` on the same `v*` tag.
+
+### Windows MSIX sideload install
+
+1. Download **both** `OneTapHabits-vX.Y.Z.msix` and `OneTapHabits-windows-signing.cer` from the release.
+2. Double-click the `.cer` → install to **Local Machine → Trusted People** (or run `scripts/windows/install-msix.ps1`).
+3. Install the `.msix` (double-click or `Add-AppxPackage`).
+
+v1.3.0 shipped **unsigned** and cannot be installed; use **v1.3.1+**.
+
+Generate or rotate the signing cert:
+
+```powershell
+./scripts/windows/create-signing-cert.ps1
+# → set WINDOWS_SIGNING_PFX_BASE64 and WINDOWS_SIGNING_PASSWORD in GitHub Actions secrets
+```
 
 ## v1.3.0 highlights
 

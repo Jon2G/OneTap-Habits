@@ -13,8 +13,8 @@
 		<ApplicationTitle>OneTap Habits</ApplicationTitle>
 		<ApplicationId>com.jon2g.onetaphabits</ApplicationId>
 
-		<ApplicationDisplayVersion>1.3.0</ApplicationDisplayVersion>
-		<ApplicationVersion>10300</ApplicationVersion>
+		<ApplicationDisplayVersion>1.3.1</ApplicationDisplayVersion>
+		<ApplicationVersion>10301</ApplicationVersion>
 
 		<WindowsPackageType>MSIX</WindowsPackageType>
 		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
@@ -30,6 +30,12 @@
 
 	<PropertyGroup Condition="$(TargetFramework.Contains('-windows'))">
 		<SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$(TargetFramework.Contains('-windows')) and '$(Configuration)' == 'Release'">
+		<AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
+		<PackageCertificateKeyFile Condition="'$(PackageCertificateKeyFile)' == '' and Exists('windows-signing.pfx')">windows-signing.pfx</PackageCertificateKeyFile>
+		<PackageCertificatePassword Condition="'$(PackageCertificatePassword)' == ''">$(WINDOWS_SIGNING_PASSWORD)</PackageCertificatePassword>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(TargetFramework.Contains('-android')) and '$(Configuration)' == 'Release'">
