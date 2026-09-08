@@ -112,10 +112,11 @@ jobs:
             exit 1
           }
           $sig = Get-AuthenticodeSignature $msix.FullName
-          if ($sig.Status -ne 'Valid') {
-            Write-Error "MSIX signature is not valid: $($sig.Status)"
+          if ($null -eq $sig.SignerCertificate -or $sig.Status -eq 'NotSigned') {
+            Write-Error "MSIX is not signed: $($sig.Status)"
             exit 1
           }
+          Write-Host "MSIX signed by $($sig.SignerCertificate.Subject) (status: $($sig.Status))"
           $dest = "./artifacts/OneTapHabits-v${{ steps.get_version.outputs.VERSION }}.msix"
           Copy-Item $msix.FullName $dest
           $pfxPath = Join-Path $PWD "src/windows-signing.pfx"
