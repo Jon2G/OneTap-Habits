@@ -62,13 +62,26 @@ jobs:
       - name: Prepare signing certificate
         run: |
           $secret = "${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}"
-          if (-not [string]::IsNullOrWhiteSpace($secret)) {
-            [IO.File]::WriteAllBytes("src/windows-signing.pfx", [Convert]::FromBase64String($secret))
-            Write-Host "windows-signing.pfx created from secret."
-          } else {
+          if ([string]::IsNullOrWhiteSpace($secret)) {
             Write-Error "WINDOWS_SIGNING_PFX_BASE64 secret is required for signed MSIX releases."
             exit 1
           }
+
+          $pfxPath = Join-Path $PWD "src/windows-signing.pfx"
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($secret))
+          $password = "${{ secrets.WINDOWS_SIGNING_PASSWORD }}".Trim()
+
+          $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(
+            $pfxPath, $password, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
+
+          Write-Host "Loaded signing certificate: $($cert.Subject) thumbprint=$($cert.Thumbprint)"
+
+          $store = New-Object System.Security.Cryptography.X509Certificates.X509Store('My', 'CurrentUser')
+          $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+          $store.Add($cert)
+          $store.Close()
+
+          "CERT_THUMBPRINT=$($cert.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         shell: pwsh
 
       - name: Get version from tag
@@ -87,10 +100,8 @@ jobs:
           $ver = "${{ steps.get_version.outputs.VERSION }}"
           $parts = $ver -split '\.'
           $vc = [int]$parts[0] * 10000 + [int]$parts[1] * 100 + [int]$parts[2]
-          dotnet publish ${{ env.PROJECT_PATH }} -f net9.0-windows10.0.22000.0 -c Release -p:ApplicationVersion=$vc -p:ApplicationDisplayVersion=$ver -p:WindowsPackageType=MSIX -p:AppxPackageSigningEnabled=true -p:PackageCertificateKeyFile=windows-signing.pfx -p:PackageCertificatePassword=$env:WINDOWS_SIGNING_PASSWORD
+          dotnet publish ${{ env.PROJECT_PATH }} -f net9.0-windows10.0.22000.0 -c Release -p:ApplicationVersion=$vc -p:ApplicationDisplayVersion=$ver -p:WindowsPackageType=MSIX -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint=$env:CERT_THUMBPRINT
         shell: pwsh
-        env:
-          WINDOWS_SIGNING_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
 
       - name: Collect MSIX artifacts
         run: |
@@ -107,12 +118,12 @@ jobs:
           }
           $dest = "./artifacts/OneTapHabits-v${{ steps.get_version.outputs.VERSION }}.msix"
           Copy-Item $msix.FullName $dest
-          $pfx = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('src/windows-signing.pfx', $env:WINDOWS_SIGNING_PASSWORD, 'Exportable')
+          $pfxPath = Join-Path $PWD "src/windows-signing.pfx"
+          $password = "${{ secrets.WINDOWS_SIGNING_PASSWORD }}".Trim()
+          $pfx = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfxPath, $password, 'Exportable')
           Export-Certificate -Cert $pfx -FilePath ./artifacts/OneTapHabits-windows-signing.cer | Out-Null
           Write-Host "Published signed MSIX: $dest"
         shell: pwsh
-        env:
-          WINDOWS_SIGNING_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
 
       - name: Upload MSIX Artifact
         uses: actions/upload-artifact@v4
