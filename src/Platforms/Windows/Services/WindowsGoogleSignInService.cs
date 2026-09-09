@@ -75,6 +75,16 @@ public sealed class WindowsGoogleSignInService : IGoogleSignInService
 
 		}
 
+		if (string.IsNullOrWhiteSpace(config.WebClientSecret))
+
+		{
+
+			throw new InvalidOperationException(
+
+				"Google OAuth web client secret is not configured. Release builds need the GOOGLE_OAUTH_CLIENT_SECRET GitHub secret.");
+
+		}
+
 
 
 		_diagnosticLog.LogInfo("GoogleSignIn", "Launching Windows loopback OAuth flow.");

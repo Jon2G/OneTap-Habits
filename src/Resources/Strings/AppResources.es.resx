@@ -326,8 +326,11 @@
   <data name="ErrorGoogleNotConfigured" xml:space="preserve">
     <value>Google Sign-In aún no está configurado. Actívalo en Firebase y agrega las huellas SHA-1 de la app.</value>
   </data>
+  <data name="ErrorGoogleClientSecretMissing" xml:space="preserve">
+    <value>Falta el secreto del cliente OAuth web de Google. Agrega GOOGLE_OAUTH_CLIENT_SECRET a los secretos del build de release e instala una versión nueva.</value>
+  </data>
   <data name="ErrorGoogleSignInFailed" xml:space="preserve">
-    <value>No se pudo iniciar sesión con Google. Verifica que http://127.0.0.1:53123/ esté autorizado como URI de redirección en tu cliente OAuth web de Google.</value>
+    <value>No se pudo iniciar sesión con Google. Revisa la configuración del cliente OAuth web de Google e inténtalo de nuevo.</value>
   </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Buscar actualizaciones</value>

@@ -11,6 +11,7 @@ public static class ErrorMessageKeyResolver
 	public const string Network = "ErrorNetwork";
 	public const string TooManyRequests = "ErrorTooManyRequests";
 	public const string GoogleNotConfigured = "ErrorGoogleNotConfigured";
+	public const string GoogleClientSecretMissing = "ErrorGoogleClientSecretMissing";
 	public const string GoogleSignInFailed = "ErrorGoogleSignInFailed";
 
 	public static string Resolve(Exception ex)
@@ -96,6 +97,15 @@ public static class ErrorMessageKeyResolver
 			    "certificate hash"))
 		{
 			return GoogleNotConfigured;
+		}
+
+		if (ContainsAny(text,
+			    "client secret is missing",
+			    "client_secret is missing",
+			    "web client secret is not configured",
+			    "google_oauth_client_secret"))
+		{
+			return GoogleClientSecretMissing;
 		}
 
 		if (ContainsAny(text,

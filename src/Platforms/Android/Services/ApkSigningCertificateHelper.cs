@@ -70,7 +70,7 @@ internal static class ApkSigningCertificateHelper
 	private static byte[]? GetSignatureBytesFromLegacySignatures(PackageInfo? packageInfo)
 	{
 		var signatures = packageInfo?.Signatures;
-		if (signatures is null || signatures.Length == 0)
+		if (signatures is null || signatures.Count == 0)
 		{
 			return null;
 		}
