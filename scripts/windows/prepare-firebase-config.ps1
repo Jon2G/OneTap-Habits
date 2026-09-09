@@ -21,10 +21,24 @@ $json = Get-Content $GoogleServicesPath -Raw -Encoding UTF8
 $root = $json | ConvertFrom-Json
 
 $projectId = $root.project_info.project_id
-$apiKey = $root.client[0].api_key[0].current_key
-$webClientId = $root.client[0].oauth_client |
+
+$androidClient = $root.client |
+    Where-Object { $_.client_info.android_client_info.package_name -eq 'com.jon2g.onetaphabits' } |
+    Select-Object -First 1
+if (-not $androidClient) {
+    $androidClient = $root.client[0]
+}
+
+$apiKey = $androidClient.api_key[0].current_key
+$webClientId = $androidClient.oauth_client |
     Where-Object { $_.client_type -eq 3 } |
     Select-Object -First 1 -ExpandProperty client_id
+
+if ([string]::IsNullOrWhiteSpace($webClientId)) {
+    $webClientId = $androidClient.services.appinvite_service.other_platform_oauth_client |
+        Where-Object { $_.client_type -eq 3 } |
+        Select-Object -First 1 -ExpandProperty client_id
+}
 
 if ([string]::IsNullOrWhiteSpace($projectId) -or
     [string]::IsNullOrWhiteSpace($apiKey) -or
