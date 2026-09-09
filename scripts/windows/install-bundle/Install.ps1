@@ -10,6 +10,32 @@ function Write-Step([string]$Message) {
     Write-Host "==> $Message"
 }
 
+function Test-IsAdministrator {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Install-PublisherCertificate([string]$CerPath) {
+    if (Test-IsAdministrator) {
+        $targets = @(
+            'Cert:\LocalMachine\TrustedPeople',
+            'Cert:\LocalMachine\Root'
+        )
+    } else {
+        $targets = @(
+            'Cert:\CurrentUser\TrustedPeople',
+            'Cert:\CurrentUser\Root'
+        )
+        Write-Host "Note: Running without administrator rights. If install fails, right-click Install.cmd and choose Run as administrator."
+    }
+
+    foreach ($storePath in $targets) {
+        Write-Step "Trusting publisher certificate in $storePath"
+        Import-Certificate -FilePath $CerPath -CertStoreLocation $storePath | Out-Null
+    }
+}
+
 $BundleRoot = (Resolve-Path $BundleRoot).Path
 
 $msix = Get-ChildItem -Path $BundleRoot -Filter 'OneTapHabits-*.msix' |
@@ -24,9 +50,7 @@ if (-not (Test-Path $cer)) {
     throw "Certificate not found: $cer"
 }
 
-Write-Step "Installing publisher certificate (Current User → Trusted People)"
-Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
-Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
+Install-PublisherCertificate -CerPath $cer
 
 $sig = Get-AuthenticodeSignature $msix.FullName
 if ($null -eq $sig.SignerCertificate -or $sig.Status -eq 'NotSigned') {
