@@ -13,6 +13,7 @@ public partial class SettingsViewModel : ObservableObject
 	private const string RepositoryUrl = "https://github.com/Jon2G/OneTap-Habits";
 
 	private readonly IAuthService _authService;
+	private readonly IGoogleSignInService _googleSignInService;
 	private readonly ILocalizationService _localization;
 	private readonly IWidgetRefreshService _widgetRefresh;
 	private readonly IThemeService _themeService;
@@ -35,6 +36,7 @@ public partial class SettingsViewModel : ObservableObject
 
 	public SettingsViewModel(
 		IAuthService authService,
+		IGoogleSignInService googleSignInService,
 		ILocalizationService localization,
 		IWidgetRefreshService widgetRefresh,
 		IThemeService themeService,
@@ -44,6 +46,7 @@ public partial class SettingsViewModel : ObservableObject
 		ICloudRestoreService cloudRestore)
 	{
 		_authService = authService;
+		_googleSignInService = googleSignInService;
 		_localization = localization;
 		_widgetRefresh = widgetRefresh;
 		_themeService = themeService;
@@ -88,7 +91,7 @@ public partial class SettingsViewModel : ObservableObject
 
 	public bool IsGuest => _authService.IsGuest;
 	public bool IsSignedIn => _authService.IsSignedIn;
-	public bool IsGoogleSignInSupported => DeviceInfo.Platform == DevicePlatform.Android;
+	public bool IsGoogleSignInSupported => _googleSignInService.IsSupported;
 	public bool CanUseGoogleSignIn => IsGoogleSignInSupported && !IsGoogleSignInBusy;
 	public bool CanRestoreCloudBackup => IsSignedIn && !IsRestoreCloudBusy;
 	public bool HasAccountError => !string.IsNullOrWhiteSpace(AccountErrorMessage);

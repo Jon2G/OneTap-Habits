@@ -118,7 +118,13 @@ jobs:
           global-json-file: global.json
 
       - name: Prepare firebase-config.json
-        run: Copy-Item src/firebase-config.json.example src/firebase-config.json
+        run: |
+          if (-not [string]::IsNullOrWhiteSpace("${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}")) {
+            $jsonBytes = [Convert]::FromBase64String("${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}")
+            [IO.File]::WriteAllBytes("src/google-services.json", $jsonBytes)
+          }
+
+          ./scripts/windows/prepare-firebase-config.ps1
         shell: pwsh
 
       - name: Restore workloads

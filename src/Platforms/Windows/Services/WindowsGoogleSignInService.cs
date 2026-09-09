@@ -21,12 +21,19 @@ public sealed class WindowsGoogleSignInService : IGoogleSignInService
 		_diagnosticLog = diagnosticLog;
 	}
 
-	public bool IsSupported => !string.IsNullOrWhiteSpace(FirebaseConfig.Load().WebClientId);
+	public bool IsSupported
+	{
+		get
+		{
+			var config = FirebaseConfig.Load();
+			return IsConfigured(config);
+		}
+	}
 
 	public async Task AuthenticateAsync(CancellationToken cancellationToken = default)
 	{
 		var config = FirebaseConfig.Load();
-		if (string.IsNullOrWhiteSpace(config.WebClientId) || string.IsNullOrWhiteSpace(config.ApiKey))
+		if (!IsConfigured(config))
 		{
 			throw new InvalidOperationException(
 				"Google Sign-In is not configured. Add firebase-config.json with apiKey and webClientId.");
@@ -75,6 +82,12 @@ public sealed class WindowsGoogleSignInService : IGoogleSignInService
 			session.IdToken,
 			session.RefreshToken ?? string.Empty);
 	}
+
+	private static bool IsConfigured(FirebaseConfig config) =>
+		!string.IsNullOrWhiteSpace(config.WebClientId) &&
+		!string.IsNullOrWhiteSpace(config.ApiKey) &&
+		!config.WebClientId.StartsWith("YOUR_", StringComparison.OrdinalIgnoreCase) &&
+		!config.ApiKey.StartsWith("YOUR_", StringComparison.OrdinalIgnoreCase);
 
 	private sealed class FirebaseSignInResponse
 	{

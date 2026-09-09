@@ -26,15 +26,14 @@ jobs:
 
       - name: Prepare firebase-config.json
         run: |
-          $secret = "${{ secrets.FIREBASE_CONFIG_JSON_BASE64 }}"
+          $secret = "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}"
           if (-not [string]::IsNullOrWhiteSpace($secret)) {
             $jsonBytes = [Convert]::FromBase64String($secret)
-            [IO.File]::WriteAllBytes("src/firebase-config.json", $jsonBytes)
-            Write-Host "firebase-config.json created from secret."
-          } else {
-            Copy-Item "src/firebase-config.json.example" "src/firebase-config.json"
-            Write-Host "Using firebase-config.json.example (secret not configured)."
+            [IO.File]::WriteAllBytes("src/google-services.json", $jsonBytes)
+            Write-Host "google-services.json created from secret."
           }
+
+          ./scripts/windows/prepare-firebase-config.ps1
         shell: pwsh
 
       - name: Apply MAUI CI SDK pin
