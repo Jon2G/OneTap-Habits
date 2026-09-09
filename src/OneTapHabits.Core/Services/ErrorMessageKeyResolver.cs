@@ -11,6 +11,7 @@ public static class ErrorMessageKeyResolver
 	public const string Network = "ErrorNetwork";
 	public const string TooManyRequests = "ErrorTooManyRequests";
 	public const string GoogleNotConfigured = "ErrorGoogleNotConfigured";
+	public const string GoogleSignInFailed = "ErrorGoogleSignInFailed";
 
 	public static string Resolve(Exception ex)
 	{
@@ -95,6 +96,19 @@ public static class ErrorMessageKeyResolver
 			    "certificate hash"))
 		{
 			return GoogleNotConfigured;
+		}
+
+		if (ContainsAny(text,
+			    "google oauth",
+			    "google token exchange",
+			    "authorization code",
+			    "redirect_uri_mismatch",
+			    "invalid_grant",
+			    "id_token",
+			    "signinwithidp",
+			    "firebase sign-in failed"))
+		{
+			return GoogleSignInFailed;
 		}
 
 		if (ContainsAny(text,

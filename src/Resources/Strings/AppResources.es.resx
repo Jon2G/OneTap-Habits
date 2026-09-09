@@ -326,6 +326,9 @@
   <data name="ErrorGoogleNotConfigured" xml:space="preserve">
     <value>Google Sign-In aún no está configurado. Actívalo en Firebase y agrega las huellas SHA-1 de la app.</value>
   </data>
+  <data name="ErrorGoogleSignInFailed" xml:space="preserve">
+    <value>No se pudo iniciar sesión con Google. Verifica que http://127.0.0.1:53123/ esté autorizado como URI de redirección en tu cliente OAuth web de Google.</value>
+  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Buscar actualizaciones</value>
   </data>

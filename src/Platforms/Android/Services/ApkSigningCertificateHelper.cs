@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using Android.Content.PM;
 using Android.OS;
@@ -16,26 +17,22 @@ internal static class ApkSigningCertificateHelper
 				return null;
 			}
 
-			var flags = Build.VERSION.SdkInt >= BuildVersionCodes.P
-				? PackageInfoFlags.SigningCertificates
-				: PackageInfoFlags.Signatures;
-
-			var packageInfo = context.PackageManager?.GetPackageInfo(packageName, flags);
+			var packageInfo = Build.VERSION.SdkInt >= BuildVersionCodes.P
+				? GetPackageInfoWithSigningCertificates(context, packageName)
+				: GetPackageInfoWithLegacySignatures(context, packageName);
 			if (packageInfo is null)
 			{
 				return null;
 			}
 
-			var signatures = Build.VERSION.SdkInt >= BuildVersionCodes.P
-				? packageInfo.SigningInfo?.GetApkContentsSigners()
-				: packageInfo.Signatures;
-
-			if (signatures is null || signatures.Count == 0)
+			var bytes = Build.VERSION.SdkInt >= BuildVersionCodes.P
+				? GetSignatureBytesFromSigningInfo(packageInfo)
+				: GetSignatureBytesFromLegacySignatures(packageInfo);
+			if (bytes is null || bytes.Length == 0)
 			{
 				return null;
 			}
 
-			var bytes = signatures[0]!.ToByteArray();
 			var hash = SHA1.HashData(bytes);
 			return BitConverter.ToString(hash).Replace("-", ":", StringComparison.Ordinal);
 		}
@@ -43,6 +40,42 @@ internal static class ApkSigningCertificateHelper
 		{
 			return null;
 		}
+	}
+
+	[SupportedOSPlatform("android28.0")]
+	private static PackageInfo? GetPackageInfoWithSigningCertificates(
+		global::Android.Content.Context context,
+		string packageName) =>
+		context.PackageManager?.GetPackageInfo(packageName, PackageInfoFlags.SigningCertificates);
+
+	[SupportedOSPlatform("android24.0")]
+	private static PackageInfo? GetPackageInfoWithLegacySignatures(
+		global::Android.Content.Context context,
+		string packageName) =>
+		context.PackageManager?.GetPackageInfo(packageName, PackageInfoFlags.Signatures);
+
+	[SupportedOSPlatform("android28.0")]
+	private static byte[]? GetSignatureBytesFromSigningInfo(PackageInfo packageInfo)
+	{
+		var signers = packageInfo.SigningInfo?.GetApkContentsSigners();
+		if (signers is null || signers.Count == 0)
+		{
+			return null;
+		}
+
+		return signers[0]?.ToByteArray();
+	}
+
+	[SupportedOSPlatform("android24.0")]
+	private static byte[]? GetSignatureBytesFromLegacySignatures(PackageInfo packageInfo)
+	{
+		var signatures = packageInfo.Signatures;
+		if (signatures is null || signatures.Count == 0)
+		{
+			return null;
+		}
+
+		return signatures[0]?.ToByteArray();
 	}
 
 	public static bool IsSha1RegisteredInGoogleServices(global::Android.Content.Context context, string? sha1Fingerprint)

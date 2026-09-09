@@ -1,5 +1,6 @@
 {
   "projectId": "onetap-habits",
   "apiKey": "YOUR_API_KEY",
-  "webClientId": "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com"
+  "webClientId": "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
+  "webClientSecret": "YOUR_WEB_CLIENT_SECRET"
 }

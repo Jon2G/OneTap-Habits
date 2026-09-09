@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Prepare firebase-config.json
         run: |
@@ -33,7 +33,7 @@ jobs:
             Write-Host "google-services.json created from secret."
           }
 
-          ./scripts/windows/prepare-firebase-config.ps1
+          ./scripts/windows/prepare-firebase-config.ps1 -WebClientSecret "${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}"
         shell: pwsh
 
       - name: Apply MAUI CI SDK pin

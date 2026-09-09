@@ -14,6 +14,8 @@ public sealed class FirebaseConfig
 
 	public string WebClientId { get; init; } = string.Empty;
 
+	public string? WebClientSecret { get; init; }
+
 	public static FirebaseConfig Load()
 	{
 		try

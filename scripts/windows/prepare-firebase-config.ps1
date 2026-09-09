@@ -1,7 +1,8 @@
 param(
     [string]$GoogleServicesPath = "src/google-services.json",
     [string]$OutputPath = "src/firebase-config.json",
-    [string]$ExamplePath = "src/firebase-config.json.example"
+    [string]$ExamplePath = "src/firebase-config.json.example",
+    [string]$WebClientSecret = $env:GOOGLE_OAUTH_CLIENT_SECRET
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,6 +36,10 @@ $config = [ordered]@{
     projectId = $projectId
     apiKey = $apiKey
     webClientId = $webClientId
+}
+
+if (-not [string]::IsNullOrWhiteSpace($WebClientSecret)) {
+    $config.webClientSecret = $WebClientSecret.Trim()
 }
 
 $config | ConvertTo-Json | Set-Content $OutputPath -Encoding UTF8

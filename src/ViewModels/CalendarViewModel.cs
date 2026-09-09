@@ -19,50 +19,50 @@ public partial class CalendarViewModel : ObservableObject
 	private bool _suppressFilterReload;
 
 	[ObservableProperty]
-	private DateOnly displayedMonth;
+	public partial DateOnly DisplayedMonth { get; set; }
 
 	[ObservableProperty]
-	private bool isBusy;
+	public partial bool IsBusy { get; set; }
 
 	[ObservableProperty]
-	private HabitFilterOption? selectedFilter;
+	public partial HabitFilterOption? SelectedFilter { get; set; }
 
 	[ObservableProperty]
-	private bool showEmptyMessage;
+	public partial bool ShowEmptyMessage { get; set; }
 
 	[ObservableProperty]
-	private bool showInsightsPanel;
+	public partial bool ShowInsightsPanel { get; set; }
 
 	[ObservableProperty]
-	private string insightsHeadline = string.Empty;
+	public partial string InsightsHeadline { get; set; } = string.Empty;
 
 	[ObservableProperty]
-	private Color insightsAccentColor = Colors.Transparent;
+	public partial Color InsightsAccentColor { get; set; } = Colors.Transparent;
 
 	public ObservableCollection<CalendarWeekRow> Weeks { get; } = [];
 	public ObservableCollection<HabitFilterOption> HabitFilterOptions { get; } = [];
 	public ObservableCollection<CalendarInsightMetricItem> InsightMetrics { get; } = [];
 
 	[ObservableProperty]
-	private string weekdayMon = string.Empty;
+	public partial string WeekdayMon { get; set; } = string.Empty;
 
 	[ObservableProperty]
-	private string weekdayTue = string.Empty;
+	public partial string WeekdayTue { get; set; } = string.Empty;
 
 	[ObservableProperty]
-	private string weekdayWed = string.Empty;
+	public partial string WeekdayWed { get; set; } = string.Empty;
 
 	[ObservableProperty]
-	private string weekdayThu = string.Empty;
+	public partial string WeekdayThu { get; set; } = string.Empty;
 
 	[ObservableProperty]
-	private string weekdayFri = string.Empty;
+	public partial string WeekdayFri { get; set; } = string.Empty;
 
 	[ObservableProperty]
-	private string weekdaySat = string.Empty;
+	public partial string WeekdaySat { get; set; } = string.Empty;
 
 	[ObservableProperty]
-	private string weekdaySun = string.Empty;
+	public partial string WeekdaySun { get; set; } = string.Empty;
 
 	public CalendarViewModel(
 		IHabitService habitService,
@@ -78,7 +78,7 @@ public partial class CalendarViewModel : ObservableObject
 		_localization = localization;
 
 		var today = DateOnly.FromDateTime(DateTime.Today);
-		displayedMonth = new DateOnly(today.Year, today.Month, 1);
+		DisplayedMonth = new DateOnly(today.Year, today.Month, 1);
 		RebuildWeekdayHeaders();
 	}
 

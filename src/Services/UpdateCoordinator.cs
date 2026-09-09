@@ -10,7 +10,10 @@ public class UpdateCoordinator
 
 	private readonly UpdateService _updateService;
 	private readonly ILocalizationService _localization;
+
+#if ANDROID
 	private bool _isChecking;
+#endif
 
 	public UpdateCoordinator(UpdateService updateService, ILocalizationService localization)
 	{
@@ -18,13 +21,20 @@ public class UpdateCoordinator
 		_localization = localization;
 	}
 
-	public async Task CheckForUpdatesAsync(INavigation navigation, bool manual)
+	public Task CheckForUpdatesAsync(INavigation navigation, bool manual)
 	{
-#if !ANDROID
+#if ANDROID
+		return CheckForUpdatesAndroidAsync(navigation, manual);
+#else
 		_ = manual;
 		_ = navigation;
-		return;
-#else
+		return Task.CompletedTask;
+#endif
+	}
+
+#if ANDROID
+	private async Task CheckForUpdatesAndroidAsync(INavigation navigation, bool manual)
+	{
 		if (_isChecking)
 		{
 			return;
@@ -101,8 +111,8 @@ public class UpdateCoordinator
 		{
 			_isChecking = false;
 		}
-#endif
 	}
+#endif
 
 	private async Task ShowUpToDateAlertAsync()
 	{

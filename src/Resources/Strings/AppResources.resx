@@ -326,6 +326,9 @@
   <data name="ErrorGoogleNotConfigured" xml:space="preserve">
     <value>Google Sign-In is not set up yet. Enable Google in Firebase and add your app SHA-1 fingerprints.</value>
   </data>
+  <data name="ErrorGoogleSignInFailed" xml:space="preserve">
+    <value>Google Sign-In failed. Check that http://127.0.0.1:53123/ is an authorized redirect URI for your Google OAuth web client.</value>
+  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Check for updates</value>
   </data>
