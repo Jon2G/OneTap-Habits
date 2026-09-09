@@ -1,27 +1,371 @@
 {
-  "type": "AdaptiveCard",
   "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-  "version": "1.6",
+  "type": "AdaptiveCard",
+  "version": "1.5",
   "body": [
     {
-      "type": "TextBlock",
-      "text": "${title}",
-      "weight": "Bolder",
-      "wrap": true
+      "type": "Container",
+      "$when": "${mode == 'signin'}",
+      "selectAction": {
+        "type": "Action.Execute",
+        "verb": "open_app"
+      },
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "${title}",
+          "weight": "Bolder",
+          "wrap": true
+        },
+        {
+          "type": "TextBlock",
+          "text": "${subtitle}",
+          "isSubtle": true,
+          "wrap": true,
+          "spacing": "Small"
+        }
+      ]
     },
     {
-      "type": "TextBlock",
-      "text": "${subtitle}",
-      "isSubtle": true,
-      "wrap": true,
-      "spacing": "Small"
-    }
-  ],
-  "actions": [
+      "type": "Container",
+      "$when": "${mode == 'empty'}",
+      "selectAction": {
+        "type": "Action.Execute",
+        "verb": "open_app"
+      },
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "${title}",
+          "weight": "Bolder",
+          "wrap": true
+        },
+        {
+          "type": "TextBlock",
+          "text": "${subtitle}",
+          "isSubtle": true,
+          "wrap": true,
+          "spacing": "Small"
+        }
+      ]
+    },
     {
-      "type": "Action.Execute",
-      "title": "Open app",
-      "verb": "open_app"
+      "type": "Container",
+      "$when": "${mode == 'grid'}",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "$when": "${show_row0}",
+          "spacing": "Small",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "$when": "${cell0_visible}",
+              "items": [
+                {
+                  "type": "Container",
+                  "style": "emphasis",
+                  "minHeight": "48px",
+                  "selectAction": {
+                    "type": "Action.Execute",
+                    "verb": "increment_habit",
+                    "data": { "habitId": "${cell0_id}" }
+                  },
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell0_name}",
+                      "weight": "Bolder",
+                      "wrap": true,
+                      "maxLines": 2,
+                      "size": "Small"
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell0_progress}",
+                      "$when": "${cell0_show_progress}",
+                      "size": "Small",
+                      "isSubtle": true,
+                      "spacing": "None"
+                    },
+                    {
+                      "type": "ActionSet",
+                      "$when": "${cell0_show_decrement}",
+                      "actions": [
+                        {
+                          "type": "Action.Execute",
+                          "title": "−",
+                          "verb": "decrement_habit",
+                          "data": { "habitId": "${cell0_id}" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "$when": "${cell1_visible}",
+              "items": [
+                {
+                  "type": "Container",
+                  "style": "emphasis",
+                  "minHeight": "48px",
+                  "selectAction": {
+                    "type": "Action.Execute",
+                    "verb": "increment_habit",
+                    "data": { "habitId": "${cell1_id}" }
+                  },
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell1_name}",
+                      "weight": "Bolder",
+                      "wrap": true,
+                      "maxLines": 2,
+                      "size": "Small"
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell1_progress}",
+                      "$when": "${cell1_show_progress}",
+                      "size": "Small",
+                      "isSubtle": true,
+                      "spacing": "None"
+                    },
+                    {
+                      "type": "ActionSet",
+                      "$when": "${cell1_show_decrement}",
+                      "actions": [
+                        {
+                          "type": "Action.Execute",
+                          "title": "−",
+                          "verb": "decrement_habit",
+                          "data": { "habitId": "${cell1_id}" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "ColumnSet",
+          "$when": "${show_row1}",
+          "spacing": "Small",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "$when": "${cell2_visible}",
+              "items": [
+                {
+                  "type": "Container",
+                  "style": "emphasis",
+                  "minHeight": "48px",
+                  "selectAction": {
+                    "type": "Action.Execute",
+                    "verb": "increment_habit",
+                    "data": { "habitId": "${cell2_id}" }
+                  },
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell2_name}",
+                      "weight": "Bolder",
+                      "wrap": true,
+                      "maxLines": 2,
+                      "size": "Small"
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell2_progress}",
+                      "$when": "${cell2_show_progress}",
+                      "size": "Small",
+                      "isSubtle": true,
+                      "spacing": "None"
+                    },
+                    {
+                      "type": "ActionSet",
+                      "$when": "${cell2_show_decrement}",
+                      "actions": [
+                        {
+                          "type": "Action.Execute",
+                          "title": "−",
+                          "verb": "decrement_habit",
+                          "data": { "habitId": "${cell2_id}" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "$when": "${cell3_visible}",
+              "items": [
+                {
+                  "type": "Container",
+                  "style": "emphasis",
+                  "minHeight": "48px",
+                  "selectAction": {
+                    "type": "Action.Execute",
+                    "verb": "increment_habit",
+                    "data": { "habitId": "${cell3_id}" }
+                  },
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell3_name}",
+                      "weight": "Bolder",
+                      "wrap": true,
+                      "maxLines": 2,
+                      "size": "Small"
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell3_progress}",
+                      "$when": "${cell3_show_progress}",
+                      "size": "Small",
+                      "isSubtle": true,
+                      "spacing": "None"
+                    },
+                    {
+                      "type": "ActionSet",
+                      "$when": "${cell3_show_decrement}",
+                      "actions": [
+                        {
+                          "type": "Action.Execute",
+                          "title": "−",
+                          "verb": "decrement_habit",
+                          "data": { "habitId": "${cell3_id}" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "ColumnSet",
+          "$when": "${show_row2}",
+          "spacing": "Small",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "$when": "${cell4_visible}",
+              "items": [
+                {
+                  "type": "Container",
+                  "style": "emphasis",
+                  "minHeight": "48px",
+                  "selectAction": {
+                    "type": "Action.Execute",
+                    "verb": "increment_habit",
+                    "data": { "habitId": "${cell4_id}" }
+                  },
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell4_name}",
+                      "weight": "Bolder",
+                      "wrap": true,
+                      "maxLines": 2,
+                      "size": "Small"
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell4_progress}",
+                      "$when": "${cell4_show_progress}",
+                      "size": "Small",
+                      "isSubtle": true,
+                      "spacing": "None"
+                    },
+                    {
+                      "type": "ActionSet",
+                      "$when": "${cell4_show_decrement}",
+                      "actions": [
+                        {
+                          "type": "Action.Execute",
+                          "title": "−",
+                          "verb": "decrement_habit",
+                          "data": { "habitId": "${cell4_id}" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "$when": "${cell5_visible}",
+              "items": [
+                {
+                  "type": "Container",
+                  "style": "emphasis",
+                  "minHeight": "48px",
+                  "selectAction": {
+                    "type": "Action.Execute",
+                    "verb": "increment_habit",
+                    "data": { "habitId": "${cell5_id}" }
+                  },
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell5_name}",
+                      "weight": "Bolder",
+                      "wrap": true,
+                      "maxLines": 2,
+                      "size": "Small"
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "${cell5_progress}",
+                      "$when": "${cell5_show_progress}",
+                      "size": "Small",
+                      "isSubtle": true,
+                      "spacing": "None"
+                    },
+                    {
+                      "type": "ActionSet",
+                      "$when": "${cell5_show_decrement}",
+                      "actions": [
+                        {
+                          "type": "Action.Execute",
+                          "title": "−",
+                          "verb": "decrement_habit",
+                          "data": { "habitId": "${cell5_id}" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "${overflow}",
+          "$when": "${show_overflow}",
+          "isSubtle": true,
+          "size": "Small",
+          "spacing": "Small",
+          "wrap": true
+        }
+      ]
     }
   ]
 }
