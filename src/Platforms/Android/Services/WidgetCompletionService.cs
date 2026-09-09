@@ -143,7 +143,7 @@ public static class WidgetCompletionService
 			countMap = CloudCachePersistence.GetCountMapForDate(file, userId, today);
 		}
 
-		WidgetSnapshotStore.Save(context, WidgetSnapshotBuilder.Build(habits, countMap, today));
+		WidgetSnapshotStore.Save(context, WidgetSnapshotBuilder.Build(habits, countMap, today, userId: userId));
 	}
 
 	private static void QueueFirestoreSync(Context context, string userId, string habitId, DateOnly today, int count)

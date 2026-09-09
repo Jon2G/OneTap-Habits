@@ -10,7 +10,8 @@ public static class WidgetSnapshotBuilder
 		IReadOnlyList<Habit> habits,
 		IReadOnlyDictionary<string, int> countMap,
 		DateOnly today,
-		bool isSignedIn = true)
+		bool isSignedIn = true,
+		string? userId = null)
 	{
 		var incomplete = habits
 			.Where(h => h.ShowInWidget)
@@ -35,6 +36,7 @@ public static class WidgetSnapshotBuilder
 		return new WidgetSnapshot
 		{
 			IsSignedIn = isSignedIn,
+			UserId = userId,
 			DateIso = today.ToString("O"),
 			Habits = visible,
 			OverflowCount = overflow

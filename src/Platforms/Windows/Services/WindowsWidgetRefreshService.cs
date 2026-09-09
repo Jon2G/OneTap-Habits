@@ -9,11 +9,16 @@ public sealed class WindowsWidgetRefreshService : IWidgetRefreshService
 {
 	private readonly IHabitService _habitService;
 	private readonly ILogService _logService;
+	private readonly IAuthService _authService;
 
-	public WindowsWidgetRefreshService(IHabitService habitService, ILogService logService)
+	public WindowsWidgetRefreshService(
+		IHabitService habitService,
+		ILogService logService,
+		IAuthService authService)
 	{
 		_habitService = habitService;
 		_logService = logService;
+		_authService = authService;
 	}
 
 	public Task RefreshAsync() => RefreshFromServicesAsync();
@@ -26,7 +31,9 @@ public sealed class WindowsWidgetRefreshService : IWidgetRefreshService
 
 	public Task ClearAsync()
 	{
+		WidgetTapAnimationFileStore.Clear();
 		WidgetSnapshotFileStore.Clear();
+		WidgetSnapshotFileStore.SignalRefresh();
 		return Task.CompletedTask;
 	}
 
@@ -38,13 +45,15 @@ public sealed class WindowsWidgetRefreshService : IWidgetRefreshService
 		ApplySnapshot(habits, countMap);
 	}
 
-	private static void ApplySnapshot(
+	private void ApplySnapshot(
 		IReadOnlyList<Habit> habits,
 		IReadOnlyDictionary<string, int> countMap)
 	{
 		WidgetTapAnimationFileStore.Clear();
 		var today = DateOnly.FromDateTime(DateTime.Today);
-		WidgetSnapshotFileStore.Save(WidgetSnapshotBuilder.Build(habits, countMap, today));
+		var userId = _authService.IsSignedIn ? _authService.UserId : null;
+		WidgetSnapshotFileStore.Save(WidgetSnapshotBuilder.Build(habits, countMap, today, userId: userId));
+		WidgetSnapshotFileStore.SignalRefresh();
 	}
 }
 #endif

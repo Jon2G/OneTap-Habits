@@ -20,6 +20,7 @@ public partial class CalendarPage : ContentPage
 		base.OnAppearing();
 		WeakReferenceMessenger.Default.Register<AppResumedMessage>(this, OnAppResumed);
 		WeakReferenceMessenger.Default.Register<AuthChangedMessage>(this, OnAuthChanged);
+		WeakReferenceMessenger.Default.Register<CloudCacheUpdatedMessage>(this, OnCloudCacheUpdated);
 		await _viewModel.LoadCommand.ExecuteAsync(null);
 	}
 
@@ -27,6 +28,7 @@ public partial class CalendarPage : ContentPage
 	{
 		WeakReferenceMessenger.Default.Unregister<AppResumedMessage>(this);
 		WeakReferenceMessenger.Default.Unregister<AuthChangedMessage>(this);
+		WeakReferenceMessenger.Default.Unregister<CloudCacheUpdatedMessage>(this);
 		base.OnDisappearing();
 	}
 
@@ -38,5 +40,10 @@ public partial class CalendarPage : ContentPage
 	private async void OnAuthChanged(object recipient, AuthChangedMessage message)
 	{
 		await _viewModel.LoadCommand.ExecuteAsync(null);
+	}
+
+	private async void OnCloudCacheUpdated(object recipient, CloudCacheUpdatedMessage message)
+	{
+		await _viewModel.ReloadFromCacheAsync();
 	}
 }

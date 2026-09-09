@@ -2,6 +2,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using OneTapHabits.Services.Firestore;
 
 namespace OneTapHabits.Services.Firebase;
@@ -168,20 +169,42 @@ public sealed class WindowsFirestoreGateway : IFirestoreGateway
 	{
 		var token = await _auth.GetValidIdTokenAsync(cancellationToken);
 		var config = FirebaseConfig.Load();
-		var url = $"https://firestore.googleapis.com/v1/projects/{config.ProjectId}/databases/(default)/documents/{collectionPath}";
-		using var request = new HttpRequestMessage(HttpMethod.Get, url);
-		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-		var response = await _http.SendAsync(request, cancellationToken);
-		response.EnsureSuccessStatusCode();
-		var payload = await response.Content.ReadFromJsonAsync<CollectionResponse>(cancellationToken: cancellationToken)
-			?? new CollectionResponse();
-		return payload.Documents?
-			.Select(doc => new FirestoreDocument<T>
+		var baseUrl =
+			$"https://firestore.googleapis.com/v1/projects/{config.ProjectId}/databases/(default)/documents/{collectionPath}";
+
+		var results = new List<FirestoreDocument<T>>();
+		string? pageToken = null;
+
+		do
+		{
+			var url = string.IsNullOrEmpty(pageToken)
+				? baseUrl
+				: $"{baseUrl}?pageToken={Uri.EscapeDataString(pageToken)}";
+
+			using var request = new HttpRequestMessage(HttpMethod.Get, url);
+			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			var response = await _http.SendAsync(request, cancellationToken);
+			response.EnsureSuccessStatusCode();
+			var payload = await response.Content.ReadFromJsonAsync<CollectionResponse>(cancellationToken: cancellationToken)
+				?? new CollectionResponse();
+
+			if (payload.Documents is not null)
 			{
-				Id = GetDocumentId(doc.Name),
-				Data = DeserializeDocument<T>(doc)
-			})
-			.ToList() ?? [];
+				foreach (var doc in payload.Documents)
+				{
+					results.Add(new FirestoreDocument<T>
+					{
+						Id = GetDocumentId(doc.Name),
+						Data = DeserializeDocument<T>(doc)
+					});
+				}
+			}
+
+			pageToken = payload.NextPageToken;
+		}
+		while (!string.IsNullOrEmpty(pageToken));
+
+		return results;
 	}
 
 	public async Task SetDocumentAsync<T>(
@@ -358,6 +381,9 @@ public sealed class WindowsFirestoreGateway : IFirestoreGateway
 	private sealed class CollectionResponse
 	{
 		public List<DocumentResponse>? Documents { get; set; }
+
+		[JsonPropertyName("nextPageToken")]
+		public string? NextPageToken { get; set; }
 	}
 
 	private sealed class DocumentResponse

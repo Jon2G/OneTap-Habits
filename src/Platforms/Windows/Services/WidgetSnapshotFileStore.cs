@@ -73,6 +73,13 @@ public static class WidgetSnapshotFileStore
 	}
 
 	public static void Clear() => Save(WidgetSnapshot.NotSignedIn());
+
+	public static void SignalRefresh()
+	{
+		var path = Path.Combine(Path.GetDirectoryName(GetFilePath())!, "widget_refresh.signal");
+		Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+		File.WriteAllText(path, DateTimeOffset.UtcNow.ToString("O"));
+	}
 }
 
 public static class WidgetTapAnimationFileStore

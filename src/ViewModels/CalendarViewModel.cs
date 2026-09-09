@@ -11,11 +11,13 @@ public partial class CalendarViewModel : ObservableObject
 {
 	private const int StreakLookbackDays = 400;
 
+	private readonly IAuthService _authService;
 	private readonly IHabitService _habitService;
 	private readonly ILogService _logService;
 	private readonly IStreakService _streakService;
 	private readonly IWeeklyProgressService _weeklyProgress;
 	private readonly ILocalizationService _localization;
+	private readonly ICloudSyncService _cloudSync;
 	private bool _suppressFilterReload;
 
 	[ObservableProperty]
@@ -65,17 +67,21 @@ public partial class CalendarViewModel : ObservableObject
 	private string weekdaySun = string.Empty;
 
 	public CalendarViewModel(
+		IAuthService authService,
 		IHabitService habitService,
 		ILogService logService,
 		IStreakService streakService,
 		IWeeklyProgressService weeklyProgress,
-		ILocalizationService localization)
+		ILocalizationService localization,
+		ICloudSyncService cloudSync)
 	{
+		_authService = authService;
 		_habitService = habitService;
 		_logService = logService;
 		_streakService = streakService;
 		_weeklyProgress = weeklyProgress;
 		_localization = localization;
+		_cloudSync = cloudSync;
 
 		var today = DateOnly.FromDateTime(DateTime.Today);
 		displayedMonth = new DateOnly(today.Year, today.Month, 1);
@@ -135,35 +141,76 @@ public partial class CalendarViewModel : ObservableObject
 		IsBusy = true;
 		try
 		{
-			RebuildWeekdayHeaders();
-			var habits = await _habitService.GetActiveHabitsAsync();
-			RebuildFilterOptions(habits);
-
-			var gridStart = CalendarMonthBuilder.StartOfWeek(DisplayedMonth);
-			var monthEnd = DisplayedMonth.AddMonths(1).AddDays(-1);
-			var gridEnd = CalendarMonthBuilder.EndOfWeek(monthEnd);
-			var today = DateOnly.FromDateTime(DateTime.Today);
-			var historyStart = today.AddDays(-StreakLookbackDays);
-
-			var gridLogs = await _logService.GetCompletedLogsInRangeAsync(gridStart, gridEnd);
-			var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, today);
-			var filterId = SelectedFilter?.HabitId;
-
-			var grid = CalendarMonthBuilder.Build(DisplayedMonth, habits, gridLogs, filterId, today);
-
-			Weeks.Clear();
-			foreach (var week in grid.Weeks)
-			{
-				Weeks.Add(CalendarWeekRow.FromWeek(week));
-			}
-
-			ShowEmptyMessage = !grid.HasAnyCompletions;
-			ApplyInsights(habits, historyLogs, filterId, today);
+			await LoadCalendarDataAsync();
 		}
 		finally
 		{
 			IsBusy = false;
 		}
+
+		RequestBackgroundCloudSync();
+	}
+
+	[RelayCommand]
+	private async Task RefreshAsync()
+	{
+		if (IsBusy)
+		{
+			return;
+		}
+
+		IsBusy = true;
+		try
+		{
+			if (!_authService.IsGuest)
+			{
+				await _cloudSync.SyncFromCloudAsync();
+			}
+
+			await LoadCalendarDataAsync();
+		}
+		finally
+		{
+			IsBusy = false;
+		}
+	}
+
+	public Task ReloadFromCacheAsync() => LoadCalendarDataAsync();
+
+	private void RequestBackgroundCloudSync()
+	{
+		if (!_authService.IsGuest)
+		{
+			_cloudSync.RequestBackgroundSync();
+		}
+	}
+
+	private async Task LoadCalendarDataAsync()
+	{
+		RebuildWeekdayHeaders();
+		var habits = await _habitService.GetActiveHabitsAsync();
+		RebuildFilterOptions(habits);
+
+		var gridStart = CalendarMonthBuilder.StartOfWeek(DisplayedMonth);
+		var monthEnd = DisplayedMonth.AddMonths(1).AddDays(-1);
+		var gridEnd = CalendarMonthBuilder.EndOfWeek(monthEnd);
+		var today = DateOnly.FromDateTime(DateTime.Today);
+		var historyStart = today.AddDays(-StreakLookbackDays);
+
+		var gridLogs = await _logService.GetCompletedLogsInRangeAsync(gridStart, gridEnd);
+		var historyLogs = await _logService.GetCompletedLogsInRangeAsync(historyStart, today);
+		var filterId = SelectedFilter?.HabitId;
+
+		var grid = CalendarMonthBuilder.Build(DisplayedMonth, habits, gridLogs, filterId, today);
+
+		Weeks.Clear();
+		foreach (var week in grid.Weeks)
+		{
+			Weeks.Add(CalendarWeekRow.FromWeek(week));
+		}
+
+		ShowEmptyMessage = !grid.HasAnyCompletions;
+		ApplyInsights(habits, historyLogs, filterId, today);
 	}
 
 	private void ApplyInsights(

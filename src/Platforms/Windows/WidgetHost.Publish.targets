@@ -1,0 +1,23 @@
+<Project>
+  <Target Name="PublishWidgetHost"
+          BeforeTargets="_GenerateAppxPackagePayload"
+          Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <PropertyGroup>
+      <_WidgetHostPublishDir>$(IntermediateOutputPath)widgethost\</_WidgetHostPublishDir>
+      <_WidgetHostRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</_WidgetHostRid>
+      <_WidgetHostRid Condition="'$(_WidgetHostRid)' == ''">win-x64</_WidgetHostRid>
+    </PropertyGroup>
+
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\OneTapHabits.WidgetHost\OneTapHabits.WidgetHost.csproj"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(_WidgetHostRid);SelfContained=false;PublishDir=$(_WidgetHostPublishDir)" />
+
+    <ItemGroup>
+      <_WidgetHostFiles Include="$(_WidgetHostPublishDir)**\*.*" />
+      <Content Include="@(_WidgetHostFiles)">
+        <Link>WidgetHost\%(RecursiveDir)%(Filename)%(Extension)</Link>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
+    </ItemGroup>
+  </Target>
+</Project>

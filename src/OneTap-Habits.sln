@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneTapHabits.Tests", "..\te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneTapHabits.Core", "OneTapHabits.Core\OneTapHabits.Core.csproj", "{E0CDD0FE-8B6E-491D-B194-64878BD031B7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneTapHabits.WidgetHost", "OneTapHabits.WidgetHost\OneTapHabits.WidgetHost.csproj", "{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{E0CDD0FE-8B6E-491D-B194-64878BD031B7}.Release|x64.Build.0 = Release|Any CPU
 		{E0CDD0FE-8B6E-491D-B194-64878BD031B7}.Release|x86.ActiveCfg = Release|Any CPU
 		{E0CDD0FE-8B6E-491D-B194-64878BD031B7}.Release|x86.Build.0 = Release|Any CPU
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Debug|Any CPU.Build.0 = Debug|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Debug|x64.ActiveCfg = Debug|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Debug|x64.Build.0 = Debug|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Debug|x86.ActiveCfg = Debug|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Debug|x86.Build.0 = Debug|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Release|Any CPU.ActiveCfg = Release|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Release|Any CPU.Build.0 = Release|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Release|x64.ActiveCfg = Release|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Release|x64.Build.0 = Release|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Release|x86.ActiveCfg = Release|x64
+		{B7E2A4C1-9D3F-4A8B-8E2C-1F5A6B9C0D2E}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows10.0.22000.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <Platforms>x64;ARM64</Platforms>
@@ -9,6 +9,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>OneTapHabits.WidgetHost</RootNamespace>
     <WindowsPackageType>None</WindowsPackageType>
+    <UseWinUI>false</UseWinUI>
   </PropertyGroup>
 
   <ItemGroup>

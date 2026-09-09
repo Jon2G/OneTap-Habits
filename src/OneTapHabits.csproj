@@ -108,4 +108,6 @@
 		<MauiAsset Include="firebase-config.json.example" LogicalName="firebase-config.json" Condition="!Exists('firebase-config.json')" />
 	</ItemGroup>
 
+	<Import Project="Platforms\Windows\WidgetHost.Publish.targets" Condition="$(TargetFramework.Contains('-windows'))" />
+
 </Project>

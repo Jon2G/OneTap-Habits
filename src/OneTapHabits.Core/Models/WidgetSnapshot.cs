@@ -4,6 +4,8 @@ public sealed class WidgetSnapshot
 {
 	public bool IsSignedIn { get; set; }
 
+	public string? UserId { get; set; }
+
 	public string DateIso { get; set; } = string.Empty;
 
 	public List<WidgetHabitEntry> Habits { get; set; } = [];

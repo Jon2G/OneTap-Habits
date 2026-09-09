@@ -2,6 +2,7 @@ using OneTapHabits.Models;
 using OneTapHabits.Platforms.Android.AppWidgets;
 using OneTapHabits.Services;
 using OneTapHabits.Services.Widget;
+using Plugin.Firebase.Auth;
 
 namespace OneTapHabits.Platforms.Android.Services;
 
@@ -65,7 +66,8 @@ public sealed class WidgetRefreshService : IWidgetRefreshService
 	{
 		WidgetTapAnimationStore.Clear(context);
 		var today = DateOnly.FromDateTime(DateTime.Today);
-		WidgetSnapshotStore.Save(context, WidgetSnapshotBuilder.Build(habits, countMap, today));
+		var userId = CrossFirebaseAuth.Current.CurrentUser?.Uid;
+		WidgetSnapshotStore.Save(context, WidgetSnapshotBuilder.Build(habits, countMap, today, userId: userId));
 		AppWidgets.HabitsAppWidgetProvider.UpdateAllWidgets(context);
 	}
 }

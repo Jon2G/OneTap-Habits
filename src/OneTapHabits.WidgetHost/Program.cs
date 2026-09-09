@@ -1,92 +1,38 @@
-using System.Text.Json;
-using OneTapHabits.Models;
+using System.Runtime.InteropServices;
 
 namespace OneTapHabits.WidgetHost;
 
-internal static class WidgetSnapshotFileStore
-{
-	private static readonly JsonSerializerOptions JsonOptions = new()
-	{
-		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-	};
-
-	public static string GetFilePath()
-	{
-		var localFolder = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
-		return Path.Combine(localFolder, "widget_snapshot.json");
-	}
-
-	public static WidgetSnapshot Load()
-	{
-		var path = GetFilePath();
-		if (!File.Exists(path))
-		{
-			return WidgetSnapshot.NotSignedIn();
-		}
-
-		try
-		{
-			return JsonSerializer.Deserialize<WidgetSnapshot>(File.ReadAllText(path), JsonOptions)
-				?? WidgetSnapshot.NotSignedIn();
-		}
-		catch
-		{
-			return WidgetSnapshot.NotSignedIn();
-		}
-	}
-}
-
-internal static class WidgetCardBuilder
-{
-	public static string LoadTemplate() =>
-		File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Templates", "HabitsTemplate.json"));
-
-	public static string BuildData(WidgetSnapshot snapshot)
-	{
-		if (!snapshot.IsSignedIn)
-		{
-			return JsonSerializer.Serialize(new { title = "OneTap Habits", subtitle = "Open the app to get started." });
-		}
-
-		if (snapshot.Habits.Count == 0)
-		{
-			var done = snapshot.OverflowCount > 0
-				? $"{snapshot.OverflowCount} more habits done today."
-				: "All habits done for today.";
-			return JsonSerializer.Serialize(new { title = "OneTap Habits", subtitle = done });
-		}
-
-		var lines = snapshot.Habits
-			.Select(h =>
-			{
-				var progress = h.TimesPerDay > 1 ? $" ({h.Count}/{h.TimesPerDay})" : string.Empty;
-				return $"• {h.Name}{progress}";
-			});
-		var subtitle = string.Join("\n", lines);
-		if (snapshot.OverflowCount > 0)
-		{
-			subtitle += $"\n+{snapshot.OverflowCount} more";
-		}
-
-		return JsonSerializer.Serialize(new { title = "Today's habits", subtitle });
-	}
-}
-
-internal sealed class HabitsWidgetProvider
-{
-	public string CreateTemplate() => WidgetCardBuilder.LoadTemplate();
-
-	public string CreateData() => WidgetCardBuilder.BuildData(WidgetSnapshotFileStore.Load());
-}
-
 internal static class Program
 {
+	[DllImport("ole32.dll")]
+	private static extern int CoRegisterClassObject(
+		[MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
+		[MarshalAs(UnmanagedType.IUnknown)] object pUnk,
+		uint dwClsContext,
+		uint flags,
+		out uint lpdwRegister);
+
+	[DllImport("ole32.dll")]
+	private static extern int CoRevokeClassObject(uint dwRegister);
+
+	private const uint ClsctxLocalServer = 0x4;
+	private const uint RegclsMultipleuse = 0x1;
+
 	[STAThread]
 	private static void Main()
 	{
-		Console.WriteLine("OneTap Habits WidgetHost started.");
-		Console.WriteLine(WidgetCardBuilder.BuildData(WidgetSnapshotFileStore.Load()));
-		Console.WriteLine("Press ENTER to exit.");
-		Console.ReadLine();
+		var clsid = Guid.Parse(WidgetConstants.ProviderClsid);
+		CoRegisterClassObject(
+			clsid,
+			new WidgetProviderFactory<HabitsWidgetProvider>(),
+			ClsctxLocalServer,
+			RegclsMultipleuse,
+			out var cookie);
+
+		WidgetRefreshWatcher.Start();
+
+		using var emptyWidgetListEvent = HabitsWidgetProvider.GetEmptyWidgetListEvent();
+		emptyWidgetListEvent.WaitOne();
+		CoRevokeClassObject(cookie);
 	}
 }

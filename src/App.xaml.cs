@@ -3,6 +3,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using OneTapHabits.Messages;
 using OneTapHabits.Services;
+using OneTapHabits.Services.Widget;
 
 public partial class App : Application
 {
@@ -30,6 +31,9 @@ public partial class App : Application
 		WeakReferenceMessenger.Default.Send(new AppResumedMessage());
 		_ = RescheduleRemindersAsync();
 		RequestBackgroundCloudSync();
+#if WINDOWS
+		RequestWidgetRefresh();
+#endif
 	}
 
 	private static async Task RunStartupMigrationsAsync()
@@ -52,6 +56,15 @@ public partial class App : Application
 	{
 		var cloudSync = IPlatformApplication.Current?.Services.GetService<ICloudSyncService>();
 		cloudSync?.RequestBackgroundSync();
+	}
+
+	private static void RequestWidgetRefresh()
+	{
+		var widgetRefresh = IPlatformApplication.Current?.Services.GetService<IWidgetRefreshService>();
+		if (widgetRefresh is not null)
+		{
+			_ = widgetRefresh.RefreshAsync();
+		}
 	}
 
 	private static async Task RescheduleRemindersAsync()

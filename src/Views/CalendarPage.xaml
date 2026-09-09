@@ -82,7 +82,7 @@
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
         </Grid>
 
-        <RefreshView Grid.Row="3" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+        <RefreshView Grid.Row="3" Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsBusy}">
             <Grid RowDefinitions="*,Auto">
                 <CollectionView Grid.Row="0"
                                   ItemsSource="{Binding Weeks}"
