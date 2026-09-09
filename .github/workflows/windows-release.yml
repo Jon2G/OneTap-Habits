@@ -124,13 +124,25 @@ jobs:
           $pfx = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfxPath, $password, 'Exportable')
           Export-Certificate -Cert $pfx -FilePath ./artifacts/OneTapHabits-windows-signing.cer | Out-Null
           Write-Host "Published signed MSIX: $dest"
+
+          $bundleDir = "./artifacts/windows-install"
+          New-Item -ItemType Directory -Force -Path $bundleDir | Out-Null
+          Copy-Item $dest $bundleDir
+          Copy-Item ./artifacts/OneTapHabits-windows-signing.cer $bundleDir
+          Copy-Item ./scripts/windows/install-bundle/Install.ps1 $bundleDir
+          Copy-Item ./scripts/windows/install-bundle/Install.cmd $bundleDir
+          Copy-Item ./scripts/windows/install-bundle/README.txt $bundleDir
+          $zipPath = "./artifacts/OneTapHabits-v${{ steps.get_version.outputs.VERSION }}-windows.zip"
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Compress-Archive -Path (Join-Path $bundleDir '*') -DestinationPath $zipPath
+          Write-Host "Published install ZIP: $zipPath"
         shell: pwsh
 
       - name: Upload MSIX Artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-msix
-          path: ./artifacts/*.msix
+          path: ./artifacts/*
           retention-days: 30
 
       - name: Attach MSIX to GitHub Release
@@ -140,8 +152,6 @@ jobs:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref_name }}
           name: OneTap Habits v${{ steps.get_version.outputs.VERSION }}
           generate_release_notes: true
-          files: |
-            ./artifacts/*.msix
-            ./artifacts/*.cer
+          files: ./artifacts/*-windows.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

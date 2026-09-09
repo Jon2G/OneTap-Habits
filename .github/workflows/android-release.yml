@@ -116,19 +116,17 @@ jobs:
       - name: Rename APK
         id: rename_apk
         run: |
-          $newName = "OneTapHabits-v${{ steps.get_version.outputs.VERSION }}.apk"
           $stableName = "OneTapHabits.apk"
           $apk = Get-ChildItem -Path ./artifacts -Filter "*-Signed.apk" | Select-Object -First 1
           if (-not $apk) {
             $apk = Get-ChildItem -Path ./artifacts -Filter "*.apk" | Select-Object -First 1
           }
           if ($apk) {
-            Rename-Item -Path $apk.FullName -NewName $newName
-            Copy-Item -Path "./artifacts/$newName" -Destination "./artifacts/$stableName" -Force
+            Move-Item -Path $apk.FullName -Destination "./artifacts/$stableName" -Force
             Get-ChildItem -Path ./artifacts -Filter "*.apk" |
-              Where-Object { $_.Name -ne $newName -and $_.Name -ne $stableName } |
+              Where-Object { $_.Name -ne $stableName } |
               Remove-Item -Force
-            Write-Host "Published APK: $newName (+ stable copy: $stableName)"
+            Write-Host "Published APK: $stableName"
           }
         shell: pwsh
 

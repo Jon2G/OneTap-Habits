@@ -51,17 +51,13 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-`android-release.yml` publishes `OneTapHabits-vX.Y.Z.apk` to GitHub Releases.
+`android-release.yml` publishes `OneTapHabits.apk` to GitHub Releases.
 
-`windows-release.yml` publishes signed `OneTapHabits-vX.Y.Z.msix` plus `OneTapHabits-windows-signing.cer` on the same `v*` tag.
+`windows-release.yml` publishes `OneTapHabits-vX.Y.Z-windows.zip` (MSIX + cert + `Install.cmd`) on the same `v*` tag.
 
-### Windows MSIX sideload install
+### Windows install
 
-1. Download **both** `OneTapHabits-vX.Y.Z.msix` and `OneTapHabits-windows-signing.cer` from the release.
-2. Double-click the `.cer` → install to **Local Machine → Trusted People** (or run `scripts/windows/install-msix.ps1`).
-3. Install the `.msix` (double-click or `Add-AppxPackage`).
-
-v1.3.0 shipped **unsigned** and cannot be installed; use **v1.3.1+**.
+Download `OneTapHabits-vX.Y.Z-windows.zip`, extract, double-click **`Install.cmd`**.
 
 Generate or rotate the signing cert:
 
