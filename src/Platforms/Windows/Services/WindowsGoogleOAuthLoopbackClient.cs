@@ -31,7 +31,7 @@ internal static class WindowsGoogleOAuthLoopbackClient
 
 		try
 		{
-			OpenBrowser(authUrl);
+			OpenBrowser(new Uri(authUrl));
 
 			using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 			timeoutCts.CancelAfter(CallbackTimeout);
