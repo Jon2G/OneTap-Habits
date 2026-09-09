@@ -1,4 +1,3 @@
-using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using Android.Content.PM;
 using Android.OS;
@@ -17,17 +16,32 @@ internal static class ApkSigningCertificateHelper
 				return null;
 			}
 
-			var packageInfo = Build.VERSION.SdkInt >= BuildVersionCodes.P
-				? GetPackageInfoWithSigningCertificates(context, packageName)
-				: GetPackageInfoWithLegacySignatures(context, packageName);
-			if (packageInfo is null)
+			var packageManager = context.PackageManager;
+			if (packageManager is null)
 			{
 				return null;
 			}
 
-			var bytes = Build.VERSION.SdkInt >= BuildVersionCodes.P
-				? GetSignatureBytesFromSigningInfo(packageInfo)
-				: GetSignatureBytesFromLegacySignatures(packageInfo);
+			byte[]? bytes;
+			if (Build.VERSION.SdkInt >= BuildVersionCodes.P)
+			{
+#pragma warning disable CA1416
+				var packageInfo = packageManager.GetPackageInfo(
+					packageName,
+					PackageInfoFlags.SigningCertificates);
+				bytes = GetSignatureBytesFromSigningInfo(packageInfo);
+#pragma warning restore CA1416
+			}
+			else
+			{
+#pragma warning disable CA1422
+				var packageInfo = packageManager.GetPackageInfo(
+					packageName,
+					PackageInfoFlags.Signatures);
+				bytes = GetSignatureBytesFromLegacySignatures(packageInfo);
+#pragma warning restore CA1422
+			}
+
 			if (bytes is null || bytes.Length == 0)
 			{
 				return null;
@@ -42,23 +56,10 @@ internal static class ApkSigningCertificateHelper
 		}
 	}
 
-	[SupportedOSPlatform("android28.0")]
-	private static PackageInfo? GetPackageInfoWithSigningCertificates(
-		global::Android.Content.Context context,
-		string packageName) =>
-		context.PackageManager?.GetPackageInfo(packageName, PackageInfoFlags.SigningCertificates);
-
-	[SupportedOSPlatform("android24.0")]
-	private static PackageInfo? GetPackageInfoWithLegacySignatures(
-		global::Android.Content.Context context,
-		string packageName) =>
-		context.PackageManager?.GetPackageInfo(packageName, PackageInfoFlags.Signatures);
-
-	[SupportedOSPlatform("android28.0")]
-	private static byte[]? GetSignatureBytesFromSigningInfo(PackageInfo packageInfo)
+	private static byte[]? GetSignatureBytesFromSigningInfo(PackageInfo? packageInfo)
 	{
-		var signers = packageInfo.SigningInfo?.GetApkContentsSigners();
-		if (signers is null || signers.Count == 0)
+		var signers = packageInfo?.SigningInfo?.GetApkContentsSigners();
+		if (signers is null || signers.Length == 0)
 		{
 			return null;
 		}
@@ -66,11 +67,10 @@ internal static class ApkSigningCertificateHelper
 		return signers[0]?.ToByteArray();
 	}
 
-	[SupportedOSPlatform("android24.0")]
-	private static byte[]? GetSignatureBytesFromLegacySignatures(PackageInfo packageInfo)
+	private static byte[]? GetSignatureBytesFromLegacySignatures(PackageInfo? packageInfo)
 	{
-		var signatures = packageInfo.Signatures;
-		if (signatures is null || signatures.Count == 0)
+		var signatures = packageInfo?.Signatures;
+		if (signatures is null || signatures.Length == 0)
 		{
 			return null;
 		}
