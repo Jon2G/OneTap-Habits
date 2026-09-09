@@ -23,16 +23,16 @@ public partial class SettingsViewModel : ObservableObject
 	private readonly ICloudRestoreService _cloudRestore;
 
 	[ObservableProperty]
-	public partial string? AccountMessage { get; set; }
+	private string? accountMessage;
 
 	[ObservableProperty]
-	public partial string? AccountErrorMessage { get; set; }
+	private string? accountErrorMessage;
 
 	[ObservableProperty]
-	public partial bool IsGoogleSignInBusy { get; set; }
+	private bool isGoogleSignInBusy;
 
 	[ObservableProperty]
-	public partial bool IsRestoreCloudBusy { get; set; }
+	private bool isRestoreCloudBusy;
 
 	public SettingsViewModel(
 		IAuthService authService,

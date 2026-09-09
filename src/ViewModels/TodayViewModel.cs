@@ -27,10 +27,10 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	public ObservableCollection<TodayHabitItem> Habits { get; } = [];
 
 	[ObservableProperty]
-	public partial bool IsRefreshing { get; set; }
+	private bool isRefreshing;
 
 	[ObservableProperty]
-	public partial DateOnly SelectedDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+	private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
 
 	public TodayViewModel(
 		IAuthService authService,

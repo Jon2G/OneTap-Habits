@@ -19,34 +19,34 @@ public partial class HabitFormViewModel : ObservableObject, IQueryAttributable
 	private string? _editingHabitId;
 
 	[ObservableProperty]
-	public partial string Name { get; set; } = string.Empty;
+	private string name = string.Empty;
 
 	[ObservableProperty]
-	public partial string SelectedColorHex { get; set; } = HabitColorPalette.Default;
+	private string selectedColorHex = HabitColorPalette.Default;
 
 	[ObservableProperty]
-	public partial string? ErrorMessage { get; set; }
+	private string? errorMessage;
 
 	[ObservableProperty]
-	public partial bool ShowInWidget { get; set; } = true;
+	private bool showInWidget = true;
 
 	[ObservableProperty]
-	public partial bool IsEveryDay { get; set; } = true;
+	private bool isEveryDay = true;
 
 	[ObservableProperty]
-	public partial HabitScheduleMode ScheduleMode { get; set; } = HabitScheduleMode.SpecificDays;
+	private HabitScheduleMode scheduleMode = HabitScheduleMode.SpecificDays;
 
 	[ObservableProperty]
-	public partial int TimesPerWeek { get; set; } = 3;
+	private int timesPerWeek = 3;
 
 	[ObservableProperty]
-	public partial int TimesPerDay { get; set; } = 1;
+	private int timesPerDay = 1;
 
 	[ObservableProperty]
-	public partial bool ReminderEnabled { get; set; }
+	private bool reminderEnabled;
 
 	[ObservableProperty]
-	public partial TimeSpan ReminderTimeSpan { get; set; } = new(9, 0, 0);
+	private TimeSpan reminderTimeSpan = new(9, 0, 0);
 
 	public bool IsEditing => !string.IsNullOrWhiteSpace(_editingHabitId);
 	public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
@@ -363,7 +363,7 @@ public partial class ColorSwatchItem : ObservableObject
 	public Color DisplayColor => Color.FromArgb(Hex);
 
 	[ObservableProperty]
-	public partial bool IsSelected { get; set; }
+	private bool isSelected;
 }
 
 public partial class DayToggleItem(int day, string label, bool isSelected) : ObservableObject
@@ -372,5 +372,5 @@ public partial class DayToggleItem(int day, string label, bool isSelected) : Obs
 	public string Label { get; } = label;
 
 	[ObservableProperty]
-	public partial bool IsSelected { get; set; } = isSelected;
+	private bool isSelected = isSelected;
 }
