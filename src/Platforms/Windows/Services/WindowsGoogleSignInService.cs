@@ -17,7 +17,10 @@ public sealed class WindowsGoogleSignInService : IGoogleSignInService
 
 	private const string RedirectUri = "http://127.0.0.1:53123/";
 
-
+	private static readonly JsonSerializerOptions FirebaseJsonOptions = new()
+	{
+		PropertyNameCaseInsensitive = true
+	};
 
 	private readonly WindowsFirebaseAuthGateway _authGateway;
 
@@ -169,7 +172,7 @@ public sealed class WindowsGoogleSignInService : IGoogleSignInService
 
 
 
-		var session = JsonSerializer.Deserialize<FirebaseSignInResponse>(responseBody)
+		var session = JsonSerializer.Deserialize<FirebaseSignInResponse>(responseBody, FirebaseJsonOptions)
 
 			?? throw new InvalidOperationException("Firebase sign-in failed.");
 

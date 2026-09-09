@@ -116,7 +116,8 @@ public static class ErrorMessageKeyResolver
 			    "invalid_grant",
 			    "id_token",
 			    "signinwithidp",
-			    "firebase sign-in failed"))
+			    "firebase sign-in failed",
+			    "firebase sign-in did not return a user"))
 		{
 			return GoogleSignInFailed;
 		}
