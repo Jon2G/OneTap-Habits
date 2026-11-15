@@ -3,10 +3,11 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap3 com rescap">
+  IgnorableNamespaces="uap uap3 uap5 com rescap">
 
   <Identity Name="maui-package-name-placeholder" Publisher="CN=Jon2G" Version="0.0.0.0" />
 
@@ -41,7 +42,7 @@
       <Extensions>
         <com:Extension Category="windows.comServer">
           <com:ComServer>
-            <com:ExeServer Executable="WidgetHost\OneTapHabits.WidgetHost.exe" DisplayName="OneTap Habits Widget Host">
+            <com:ExeServer Executable="WidgetHost\OneTapHabits.WidgetHost.exe" Arguments="-RegisterProcessAsComServer" DisplayName="OneTap Habits Widget Host">
               <com:Class Id="8C4F1A2E-6B3D-4F9A-9E1C-2D5B7A8C9E0F" DisplayName="OneTap Habits Widget Provider" />
             </com:ExeServer>
           </com:ComServer>
@@ -51,6 +52,7 @@
             <uap3:Properties>
               <WidgetProvider>
                 <ProviderIcons>
+                  <!-- Paths are package-root relative (same as released builds). Files under Public\ alone are not discovered by Widget Board. -->
                   <Icon Path="appiconStoreLogo.scale-200.png" />
                 </ProviderIcons>
                 <Activation>
@@ -86,6 +88,12 @@
             </uap3:Properties>
           </uap3:AppExtension>
         </uap3:Extension>
+        <uap5:Extension Category="windows.startupTask">
+          <uap5:StartupTask
+            TaskId="OneTapHabitsStartup"
+            Enabled="false"
+            DisplayName="OneTap Habits" />
+        </uap5:Extension>
       </Extensions>
     </Application>
   </Applications>

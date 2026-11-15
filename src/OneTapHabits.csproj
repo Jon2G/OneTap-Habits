@@ -109,5 +109,6 @@
 	</ItemGroup>
 
 	<Import Project="Platforms\Windows\WidgetHost.Publish.targets" Condition="$(TargetFramework.Contains('-windows'))" />
+	<Import Project="Platforms\Windows\WidgetPublicAssets.targets" Condition="$(TargetFramework.Contains('-windows'))" />
 
 </Project>

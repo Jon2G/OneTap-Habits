@@ -227,6 +227,29 @@
                 </Grid>
             </Border>
 
+            <VerticalStackLayout IsVisible="{Binding IsWindowsStartupSupported}" Spacing="12">
+                <BoxView HeightRequest="1"
+                         Color="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"
+                         Margin="0,8" />
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="{Binding StartWithWindowsLabel}" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnBackground}, Dark={StaticResource OnBackgroundDark}}" />
+                        <Label Text="{Binding StartWithWindowsHint}" FontSize="13"
+                               TextColor="{AppThemeBinding Light={StaticResource OnSurfaceMuted}, Dark={StaticResource OnSurfaceMutedDark}}" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1"
+                            IsToggled="{Binding StartWithWindows}"
+                            VerticalOptions="Center" />
+                </Grid>
+
+                <Label Text="{Binding StartupErrorMessage}"
+                       IsVisible="{Binding HasStartupError}"
+                       FontSize="13"
+                       TextColor="{AppThemeBinding Light={StaticResource Error}, Dark={StaticResource ErrorDark}}" />
+            </VerticalStackLayout>
+
             <VerticalStackLayout IsVisible="{Binding IsWidgetSettingsSupported}" Spacing="12">
                 <BoxView HeightRequest="1"
                          Color="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource OutlineDark}}"

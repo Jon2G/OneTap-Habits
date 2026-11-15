@@ -383,6 +383,15 @@
   <data name="WidgetTintStrong" xml:space="preserve">
     <value>Strong</value>
   </data>
+  <data name="StartWithWindows" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
+  <data name="StartWithWindowsHint" xml:space="preserve">
+    <value>Open OneTap Habits when you sign in to Windows.</value>
+  </data>
+  <data name="StartWithWindowsError" xml:space="preserve">
+    <value>Could not change startup setting. Check Task Manager → Startup apps, or your organization policy.</value>
+  </data>
   <data name="CalendarInsightsTitle" xml:space="preserve">
     <value>Your progress</value>
   </data>

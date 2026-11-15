@@ -123,6 +123,7 @@ jobs:
           $pfx = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfxPath, $password, 'Exportable')
           Export-Certificate -Cert $pfx -FilePath ./artifacts/OneTapHabits-windows-signing.cer | Out-Null
           Write-Host "Published signed MSIX: $dest"
+          ./scripts/windows/verify-widget-package.ps1 -MsixPath $dest
 
           $bundleDir = "./artifacts/windows-install"
           New-Item -ItemType Directory -Force -Path $bundleDir | Out-Null

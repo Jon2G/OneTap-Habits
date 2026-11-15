@@ -24,27 +24,53 @@ public static class GoogleServicesJsonParser
 
 		foreach (var client in clients.EnumerateArray())
 		{
-			if (!client.TryGetProperty("oauth_client", out var oauthClients))
+			var fromOauth = TryGetWebClientIdFromOauthArray(client, "oauth_client");
+			if (!string.IsNullOrWhiteSpace(fromOauth))
+			{
+				return fromOauth;
+			}
+
+			// Firebase often places the Web client (type 3) only under
+			// services.appinvite_service.other_platform_oauth_client once Android
+			// OAuth clients exist — not inside oauth_client.
+			if (client.TryGetProperty("services", out var services) &&
+			    services.TryGetProperty("appinvite_service", out var appInvite))
+			{
+				var fromOther = TryGetWebClientIdFromOauthArray(appInvite, "other_platform_oauth_client");
+				if (!string.IsNullOrWhiteSpace(fromOther))
+				{
+					return fromOther;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	private static string? TryGetWebClientIdFromOauthArray(JsonElement parent, string arrayPropertyName)
+	{
+		if (!parent.TryGetProperty(arrayPropertyName, out var oauthClients))
+		{
+			return null;
+		}
+
+		foreach (var oauthClient in oauthClients.EnumerateArray())
+		{
+			if (!oauthClient.TryGetProperty("client_type", out var clientType) ||
+			    clientType.GetInt32() != WebClientType)
 			{
 				continue;
 			}
 
-			foreach (var oauthClient in oauthClients.EnumerateArray())
+			if (!oauthClient.TryGetProperty("client_id", out var clientId))
 			{
-				if (!oauthClient.TryGetProperty("client_type", out var clientType) ||
-				    clientType.GetInt32() != WebClientType)
-				{
-					continue;
-				}
+				continue;
+			}
 
-				if (oauthClient.TryGetProperty("client_id", out var clientId))
-				{
-					var value = clientId.GetString();
-					if (!string.IsNullOrWhiteSpace(value))
-					{
-						return value;
-					}
-				}
+			var value = clientId.GetString();
+			if (!string.IsNullOrWhiteSpace(value))
+			{
+				return value;
 			}
 		}
 

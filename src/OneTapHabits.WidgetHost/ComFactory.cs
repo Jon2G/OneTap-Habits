@@ -8,6 +8,7 @@ internal static class ComGuids
 {
 	public const string IClassFactory = "00000001-0000-0000-C000-000000000046";
 	public const string IUnknown = "00000000-0000-0000-C000-000000000046";
+	public const string IInspectable = "AF86E2E0-B12D-4C6A-9C5A-D7AA65101E90";
 }
 
 [ComImport]
@@ -39,7 +40,10 @@ internal sealed class WidgetProviderFactory<T> : IClassFactory
 			Marshal.ThrowExceptionForHR(ClassENoAggregation);
 		}
 
-		if (riid == typeof(T).GUID || riid == Guid.Parse(ComGuids.IUnknown))
+		if (riid == typeof(T).GUID
+		    || riid == typeof(IWidgetProvider).GUID
+		    || riid == Guid.Parse(ComGuids.IUnknown)
+		    || riid == Guid.Parse(ComGuids.IInspectable))
 		{
 			ppvObject = MarshalInspectable<IWidgetProvider>.FromManaged(new T());
 			return 0;

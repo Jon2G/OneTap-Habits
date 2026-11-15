@@ -1,0 +1,93 @@
+<Project>
+
+  <!--
+    Keeps Public\ProviderAssets for AppExtension PublicFolder completeness.
+    Widget Board picker icons/screenshots are declared as package-root appicon*.scale-200.png
+    in Package.appxmanifest (matching released builds). Do not point the manifest at these
+    Public\ paths alone — the picker will hide the widget.
+  -->
+  <Target Name="PrepareWidgetPublicAssets"
+
+          BeforeTargets="ComputeFilesToPublish"
+
+          DependsOnTargets="ResizetizeImages"
+
+          Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+
+    <PropertyGroup>
+
+      <_WidgetPublicDir>$(MSBuildThisFileDirectory)Public\ProviderAssets\</_WidgetPublicDir>
+
+    </PropertyGroup>
+
+
+
+    <ItemGroup>
+
+      <_WidgetStoreLogo Include="$(IntermediateOutputPath)**\appiconStoreLogo.scale-200.png" />
+
+      <_WidgetLogo Include="$(IntermediateOutputPath)**\appiconLogo.scale-200.png" />
+
+      <_WidgetScreenshot Include="$(IntermediateOutputPath)**\appiconWideTile.scale-200.png" />
+
+    </ItemGroup>
+
+
+
+    <MakeDir Directories="$(_WidgetPublicDir)" />
+
+
+
+    <Copy SourceFiles="@(_WidgetStoreLogo)"
+
+          DestinationFiles="$(_WidgetPublicDir)widget-store-logo.png"
+
+          SkipUnchangedFiles="true"
+
+          Condition="'@(_WidgetStoreLogo)' != ''" />
+
+
+
+    <Copy SourceFiles="@(_WidgetLogo)"
+
+          DestinationFiles="$(_WidgetPublicDir)widget-icon.png"
+
+          SkipUnchangedFiles="true"
+
+          Condition="'@(_WidgetLogo)' != ''" />
+
+
+
+    <Copy SourceFiles="@(_WidgetScreenshot)"
+
+          DestinationFiles="$(_WidgetPublicDir)widget-screenshot.png"
+
+          SkipUnchangedFiles="true"
+
+          Condition="'@(_WidgetScreenshot)' != ''" />
+
+
+
+    <ItemGroup>
+
+      <_WidgetPublicSourceFiles Include="$(MSBuildThisFileDirectory)Public\**\*.*" />
+
+      <ResolvedFileToPublish Include="@(_WidgetPublicSourceFiles)">
+
+        <RelativePath>Public\$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)Public\', '%(FullPath)'))</RelativePath>
+
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+
+      </ResolvedFileToPublish>
+
+    </ItemGroup>
+
+
+
+    <Message Importance="high" Text="Publishing @(_WidgetPublicSourceFiles->Count()) widget public assets under Public\" />
+
+  </Target>
+
+</Project>
+
+

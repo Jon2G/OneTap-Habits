@@ -1,9 +1,13 @@
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
 using Microsoft.Windows.Widgets.Providers;
 
 namespace OneTapHabits.WidgetHost;
 
+[ComVisible(true)]
+[ComDefaultInterface(typeof(IWidgetProvider))]
+[Guid(WidgetConstants.ProviderClsid)]
 internal sealed class HabitsWidgetProvider : IWidgetProvider
 {
 	private static readonly object Gate = new();
@@ -16,7 +20,10 @@ internal sealed class HabitsWidgetProvider : IWidgetProvider
 		{
 			foreach (var widgetInfo in WidgetManager.GetDefault().GetWidgetInfos())
 			{
-				RegisterWidget(widgetInfo.WidgetContext.Id, widgetInfo.WidgetContext.DefinitionId);
+				var widget = RegisterWidget(widgetInfo.WidgetContext.Id, widgetInfo.WidgetContext.DefinitionId);
+				WidgetDebugLog.Info(
+					$"Recovered widget id={widget.WidgetId} definition={widget.DefinitionId}");
+				UpdateWidget(widget);
 			}
 		}
 	}
@@ -27,6 +34,7 @@ internal sealed class HabitsWidgetProvider : IWidgetProvider
 	{
 		lock (Gate)
 		{
+			EnsureRunningWidgetsRecovered();
 			foreach (var widget in RunningWidgets.Values)
 			{
 				UpdateWidget(widget);
@@ -34,10 +42,26 @@ internal sealed class HabitsWidgetProvider : IWidgetProvider
 		}
 	}
 
+	private static void EnsureRunningWidgetsRecovered()
+	{
+		try
+		{
+			foreach (var widgetInfo in WidgetManager.GetDefault().GetWidgetInfos())
+			{
+				RegisterWidget(widgetInfo.WidgetContext.Id, widgetInfo.WidgetContext.DefinitionId);
+			}
+		}
+		catch (Exception ex)
+		{
+			WidgetDebugLog.Error("Failed to recover widget infos.", ex);
+		}
+	}
+
 	public void CreateWidget(WidgetContext widgetContext)
 	{
 		lock (Gate)
 		{
+			WidgetDebugLog.Info($"CreateWidget id={widgetContext.Id} definition={widgetContext.DefinitionId}");
 			var widget = RegisterWidget(widgetContext.Id, widgetContext.DefinitionId);
 			UpdateWidget(widget);
 		}
@@ -92,6 +116,7 @@ internal sealed class HabitsWidgetProvider : IWidgetProvider
 	{
 		lock (Gate)
 		{
+			WidgetDebugLog.Info($"Activate id={widgetContext.Id}");
 			var widget = RegisterWidget(widgetContext.Id, widgetContext.DefinitionId);
 			widget.IsActive = true;
 			UpdateWidget(widget);
@@ -131,16 +156,23 @@ internal sealed class HabitsWidgetProvider : IWidgetProvider
 		{
 			var snapshot = WidgetSnapshotFileStore.Load();
 			var animation = WidgetTapAnimationFileStore.Load();
+			var template = WidgetCardBuilder.LoadTemplate();
+			var data = WidgetCardBuilder.BuildData(snapshot, animation);
+			WidgetDebugLog.Info(
+				$"UpdateWidget id={widget.WidgetId} signedIn={snapshot.IsSignedIn} habits={snapshot.Habits.Count} templateExists={File.Exists(Path.Combine(AppContext.BaseDirectory, "Templates", "HabitsTemplate.json"))}");
+			WidgetDebugLog.DumpPayload(widget.WidgetId, template, data);
+
 			var updateOptions = new WidgetUpdateRequestOptions(widget.WidgetId)
 			{
-				Template = WidgetCardBuilder.LoadTemplate(),
-				Data = WidgetCardBuilder.BuildData(snapshot, animation)
+				Template = template,
+				Data = data
 			};
 
 			WidgetManager.GetDefault().UpdateWidget(updateOptions);
 		}
-		catch
+		catch (Exception ex)
 		{
+			WidgetDebugLog.Error($"UpdateWidget failed for {widget.WidgetId}", ex);
 			var updateOptions = new WidgetUpdateRequestOptions(widget.WidgetId)
 			{
 				Template = WidgetCardBuilder.LoadTemplate(),
@@ -186,7 +218,7 @@ internal sealed class HabitsWidgetProvider : IWidgetProvider
 				.GetResult();
 			if (entries.Count > 0)
 			{
-				Windows.System.Launcher.LaunchAsync(entries[0])
+				entries[0].LaunchAsync()
 					.AsTask()
 					.GetAwaiter()
 					.GetResult();

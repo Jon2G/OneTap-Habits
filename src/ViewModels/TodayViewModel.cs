@@ -102,8 +102,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	[RelayCommand]
 	public async Task LoadAsync()
 	{
-		await LoadHabitsAsync(syncFromCloud: false);
-		RequestBackgroundCloudSync();
+		await LoadHabitsAsync(syncFromCloud: true);
 	}
 
 	[RelayCommand]
@@ -111,12 +110,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 	{
 		try
 		{
-			if (!_authService.IsGuest)
-			{
-				await _cloudSync.SyncFromCloudAsync();
-			}
-
-			await LoadHabitsAsync(syncFromCloud: false);
+			await LoadHabitsAsync(syncFromCloud: true);
 		}
 		finally
 		{
@@ -207,14 +201,6 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 		}
 	}
 
-	private void RequestBackgroundCloudSync()
-	{
-		if (!_authService.IsGuest)
-		{
-			_cloudSync.RequestBackgroundSync();
-		}
-	}
-
 	public async Task PersistHabitOrderAsync()
 	{
 		if (!IsViewingToday)
@@ -252,6 +238,7 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 
 		var next = await _logService.IncrementCountAsync(item.Habit.Id, SelectedDate);
 		ReplaceHabitCount(item.Habit.Id, next);
+		await RefreshWidgetForSelectedDateAsync();
 		_ = RefreshHabitsInBackgroundAsync();
 	}
 
@@ -265,14 +252,8 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 
 		var next = await _logService.DecrementCountAsync(item.Habit.Id, SelectedDate);
 		ReplaceHabitCount(item.Habit.Id, next);
+		await RefreshWidgetForSelectedDateAsync();
 		_ = RefreshHabitsInBackgroundAsync();
-		if (IsViewingToday)
-		{
-			var today = DateOnly.FromDateTime(DateTime.Today);
-			var habits = await _habitService.GetTodayHabitsAsync(today);
-			var countMap = await _logService.GetCountMapForDateAsync(today);
-			await _widgetRefresh.RefreshAsync(habits, countMap);
-		}
 	}
 
 	[RelayCommand]
@@ -285,7 +266,21 @@ public partial class TodayViewModel : ObservableObject, IQueryAttributable
 
 		await _logService.SetCompletedAsync(item.Habit.Id, SelectedDate, false);
 		ReplaceHabitCount(item.Habit.Id, 0);
+		await RefreshWidgetForSelectedDateAsync();
 		_ = RefreshHabitsInBackgroundAsync();
+	}
+
+	private async Task RefreshWidgetForSelectedDateAsync()
+	{
+		if (!IsViewingToday)
+		{
+			return;
+		}
+
+		var today = DateOnly.FromDateTime(DateTime.Today);
+		var habits = await _habitService.GetTodayHabitsAsync(today);
+		var countMap = await _logService.GetCountMapForDateAsync(today);
+		await _widgetRefresh.RefreshAsync(habits, countMap);
 	}
 
 	private async Task RefreshHabitsInBackgroundAsync()

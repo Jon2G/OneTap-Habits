@@ -64,6 +64,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IWidgetRefreshService, Platforms.Android.Services.WidgetRefreshService>();
 		builder.Services.AddSingleton<IGoogleSignInService, Platforms.Android.Services.AndroidGoogleSignInService>();
 		builder.Services.AddSingleton<IHabitReminderService, Platforms.Android.Services.AndroidHabitReminderService>();
+		builder.Services.AddSingleton<IAppStartupService, NoOpAppStartupService>();
 #elif WINDOWS
 		builder.Services.AddSingleton<WindowsFirebaseAuthGateway>();
 		builder.Services.AddSingleton<IFirebaseAuthGateway>(sp => sp.GetRequiredService<WindowsFirebaseAuthGateway>());
@@ -71,10 +72,12 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IWidgetRefreshService, Platforms.Windows.Services.WindowsWidgetRefreshService>();
 		builder.Services.AddSingleton<IGoogleSignInService, WindowsGoogleSignInService>();
 		builder.Services.AddSingleton<IHabitReminderService, NoOpHabitReminderService>();
+		builder.Services.AddSingleton<IAppStartupService, Platforms.Windows.Services.WindowsAppStartupService>();
 #else
 		builder.Services.AddSingleton<IWidgetRefreshService, NoOpWidgetRefreshService>();
 		builder.Services.AddSingleton<IGoogleSignInService, NoOpGoogleSignInService>();
 		builder.Services.AddSingleton<IHabitReminderService, NoOpHabitReminderService>();
+		builder.Services.AddSingleton<IAppStartupService, NoOpAppStartupService>();
 #endif
 
 		builder.Services.AddTransient<TodayViewModel>();

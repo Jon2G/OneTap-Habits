@@ -78,9 +78,14 @@ public sealed class WindowsFirebaseAuthGateway : IFirebaseAuthGateway
 		return Task.CompletedTask;
 	}
 
-	internal async Task<string> GetValidIdTokenAsync(CancellationToken cancellationToken = default)
+	internal Task<string> GetValidIdTokenAsync(CancellationToken cancellationToken = default) =>
+		GetValidIdTokenAsync(forceRefresh: false, cancellationToken);
+
+	internal async Task<string> GetValidIdTokenAsync(bool forceRefresh, CancellationToken cancellationToken = default)
 	{
-		if (!string.IsNullOrEmpty(_idToken))
+		if (!forceRefresh
+			&& !string.IsNullOrEmpty(_idToken)
+			&& !IsJwtExpired(_idToken, TimeSpan.FromMinutes(5)))
 		{
 			return _idToken;
 		}
@@ -102,16 +107,66 @@ public sealed class WindowsFirebaseAuthGateway : IFirebaseAuthGateway
 			cancellationToken);
 
 		response.EnsureSuccessStatusCode();
-		var payload = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>(cancellationToken: cancellationToken)
+		var payload = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>(
+				RefreshTokenJsonOptions,
+				cancellationToken)
 			?? throw new InvalidOperationException("Token refresh failed.");
+		if (string.IsNullOrWhiteSpace(payload.IdToken))
+		{
+			throw new InvalidOperationException("Token refresh returned an empty id_token.");
+		}
+
 		_idToken = payload.IdToken;
-		_refreshToken = payload.RefreshToken;
+		if (!string.IsNullOrWhiteSpace(payload.RefreshToken))
+		{
+			_refreshToken = payload.RefreshToken;
+		}
+
 		if (_currentUser is not null)
 		{
-			SetSession(_currentUser, _idToken, _refreshToken);
+			SetSession(_currentUser, _idToken, _refreshToken!);
 		}
 
 		return _idToken;
+	}
+
+	private static bool IsJwtExpired(string jwt, TimeSpan skew)
+	{
+		try
+		{
+			var parts = jwt.Split('.');
+			if (parts.Length < 2)
+			{
+				return true;
+			}
+
+			var payload = parts[1].Replace('-', '+').Replace('_', '/');
+			switch (payload.Length % 4)
+			{
+				case 2:
+					payload += "==";
+					break;
+				case 3:
+					payload += "=";
+					break;
+			}
+
+			var json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+			using var doc = JsonDocument.Parse(json);
+			if (!doc.RootElement.TryGetProperty("exp", out var expElement))
+			{
+				return true;
+			}
+
+			var exp = expElement.ValueKind == JsonValueKind.Number
+				? expElement.GetInt64()
+				: long.Parse(expElement.GetString() ?? "0");
+			return DateTimeOffset.UtcNow >= DateTimeOffset.FromUnixTimeSeconds(exp) - skew;
+		}
+		catch
+		{
+			return true;
+		}
 	}
 
 	private void RestoreSession()
@@ -148,9 +203,17 @@ public sealed class WindowsFirebaseAuthGateway : IFirebaseAuthGateway
 		public string RefreshToken { get; set; } = string.Empty;
 	}
 
+	private static readonly JsonSerializerOptions RefreshTokenJsonOptions = new()
+	{
+		PropertyNameCaseInsensitive = true
+	};
+
 	private sealed class RefreshTokenResponse
 	{
+		[JsonPropertyName("id_token")]
 		public string IdToken { get; set; } = string.Empty;
+
+		[JsonPropertyName("refresh_token")]
 		public string RefreshToken { get; set; } = string.Empty;
 	}
 }
@@ -162,76 +225,94 @@ public sealed class WindowsFirestoreGateway : IFirestoreGateway
 
 	public WindowsFirestoreGateway(WindowsFirebaseAuthGateway auth) => _auth = auth;
 
-	public async Task<IReadOnlyList<FirestoreDocument<T>>> GetDocumentsAsync<T>(
+	public Task<IReadOnlyList<FirestoreDocument<T>>> GetDocumentsAsync<T>(
 		string collectionPath,
 		CancellationToken cancellationToken = default)
-		where T : class, new()
-	{
-		var token = await _auth.GetValidIdTokenAsync(cancellationToken);
-		var config = FirebaseConfig.Load();
-		var baseUrl =
-			$"https://firestore.googleapis.com/v1/projects/{config.ProjectId}/databases/(default)/documents/{collectionPath}";
-
-		var results = new List<FirestoreDocument<T>>();
-		string? pageToken = null;
-
-		do
+		where T : class, new() =>
+		SendWithAuthRetryAsync(async token =>
 		{
-			var url = string.IsNullOrEmpty(pageToken)
-				? baseUrl
-				: $"{baseUrl}?pageToken={Uri.EscapeDataString(pageToken)}";
+			var config = FirebaseConfig.Load();
+			var baseUrl =
+				$"https://firestore.googleapis.com/v1/projects/{config.ProjectId}/databases/(default)/documents/{collectionPath}";
 
-			using var request = new HttpRequestMessage(HttpMethod.Get, url);
-			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-			var response = await _http.SendAsync(request, cancellationToken);
-			response.EnsureSuccessStatusCode();
-			var payload = await response.Content.ReadFromJsonAsync<CollectionResponse>(cancellationToken: cancellationToken)
-				?? new CollectionResponse();
+			var results = new List<FirestoreDocument<T>>();
+			string? pageToken = null;
 
-			if (payload.Documents is not null)
+			do
 			{
-				foreach (var doc in payload.Documents)
+				var url = string.IsNullOrEmpty(pageToken)
+					? baseUrl
+					: $"{baseUrl}?pageToken={Uri.EscapeDataString(pageToken)}";
+
+				using var request = new HttpRequestMessage(HttpMethod.Get, url);
+				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+				var response = await _http.SendAsync(request, cancellationToken);
+				response.EnsureSuccessStatusCode();
+				var payload = await response.Content.ReadFromJsonAsync<CollectionResponse>(cancellationToken: cancellationToken)
+					?? new CollectionResponse();
+
+				if (payload.Documents is not null)
 				{
-					results.Add(new FirestoreDocument<T>
+					foreach (var doc in payload.Documents)
 					{
-						Id = GetDocumentId(doc.Name),
-						Data = DeserializeDocument<T>(doc)
-					});
+						results.Add(new FirestoreDocument<T>
+						{
+							Id = GetDocumentId(doc.Name),
+							Data = DeserializeDocument<T>(doc)
+						});
+					}
 				}
+
+				pageToken = payload.NextPageToken;
 			}
+			while (!string.IsNullOrEmpty(pageToken));
 
-			pageToken = payload.NextPageToken;
-		}
-		while (!string.IsNullOrEmpty(pageToken));
+			return (IReadOnlyList<FirestoreDocument<T>>)results;
+		}, cancellationToken);
 
-		return results;
-	}
-
-	public async Task SetDocumentAsync<T>(
+	public Task SetDocumentAsync<T>(
 		string documentPath,
 		T data,
 		CancellationToken cancellationToken = default)
-		where T : class
-	{
-		var token = await _auth.GetValidIdTokenAsync(cancellationToken);
-		var config = FirebaseConfig.Load();
-		var url = $"https://firestore.googleapis.com/v1/projects/{config.ProjectId}/databases/(default)/documents/{documentPath}";
-		using var request = new HttpRequestMessage(HttpMethod.Patch, url);
-		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-		request.Content = JsonContent.Create(BuildFields(data));
-		var response = await _http.SendAsync(request, cancellationToken);
-		response.EnsureSuccessStatusCode();
-	}
+		where T : class =>
+		SendWithAuthRetryAsync(async token =>
+		{
+			var config = FirebaseConfig.Load();
+			var url = $"https://firestore.googleapis.com/v1/projects/{config.ProjectId}/databases/(default)/documents/{documentPath}";
+			using var request = new HttpRequestMessage(HttpMethod.Patch, url);
+			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			request.Content = JsonContent.Create(BuildFields(data));
+			var response = await _http.SendAsync(request, cancellationToken);
+			response.EnsureSuccessStatusCode();
+			return true;
+		}, cancellationToken);
 
-	public async Task DeleteDocumentAsync(string documentPath, CancellationToken cancellationToken = default)
+	public Task DeleteDocumentAsync(string documentPath, CancellationToken cancellationToken = default) =>
+		SendWithAuthRetryAsync(async token =>
+		{
+			var config = FirebaseConfig.Load();
+			var url = $"https://firestore.googleapis.com/v1/projects/{config.ProjectId}/databases/(default)/documents/{documentPath}";
+			using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			var response = await _http.SendAsync(request, cancellationToken);
+			response.EnsureSuccessStatusCode();
+			return true;
+		}, cancellationToken);
+
+	private async Task<TResult> SendWithAuthRetryAsync<TResult>(
+		Func<string, Task<TResult>> send,
+		CancellationToken cancellationToken)
 	{
 		var token = await _auth.GetValidIdTokenAsync(cancellationToken);
-		var config = FirebaseConfig.Load();
-		var url = $"https://firestore.googleapis.com/v1/projects/{config.ProjectId}/databases/(default)/documents/{documentPath}";
-		using var request = new HttpRequestMessage(HttpMethod.Delete, url);
-		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-		var response = await _http.SendAsync(request, cancellationToken);
-		response.EnsureSuccessStatusCode();
+		try
+		{
+			return await send(token);
+		}
+		catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+		{
+			token = await _auth.GetValidIdTokenAsync(forceRefresh: true, cancellationToken);
+			return await send(token);
+		}
 	}
 
 	private static string GetDocumentId(string fullName)

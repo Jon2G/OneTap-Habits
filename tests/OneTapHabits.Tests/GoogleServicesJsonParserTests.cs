@@ -36,11 +36,40 @@ public class GoogleServicesJsonParserTests
 		}
 		""";
 
+	private const string SampleWebClientOnlyUnderOtherPlatform = """
+		{
+		  "client": [
+		    {
+		      "client_info": {
+		        "android_client_info": { "package_name": "com.jon2g.onetaphabits" }
+		      },
+		      "oauth_client": [
+		        { "client_type": 1, "client_id": "android-client" }
+		      ],
+		      "services": {
+		        "appinvite_service": {
+		          "other_platform_oauth_client": [
+		            { "client_type": 3, "client_id": "69895168896-web.apps.googleusercontent.com" }
+		          ]
+		        }
+		      }
+		    }
+		  ]
+		}
+		""";
+
 	[Fact]
 	public void TryGetWebClientId_ReturnsType3ClientId()
 	{
 		var clientId = GoogleServicesJsonParser.TryGetWebClientId(SampleWithWebClient);
 		Assert.Equal("123456789-web.apps.googleusercontent.com", clientId);
+	}
+
+	[Fact]
+	public void TryGetWebClientId_ReturnsType3FromOtherPlatformOauthClient()
+	{
+		var clientId = GoogleServicesJsonParser.TryGetWebClientId(SampleWebClientOnlyUnderOtherPlatform);
+		Assert.Equal("69895168896-web.apps.googleusercontent.com", clientId);
 	}
 
 	[Fact]

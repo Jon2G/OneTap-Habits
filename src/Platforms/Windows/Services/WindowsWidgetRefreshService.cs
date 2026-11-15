@@ -51,8 +51,14 @@ public sealed class WindowsWidgetRefreshService : IWidgetRefreshService
 	{
 		WidgetTapAnimationFileStore.Clear();
 		var today = DateOnly.FromDateTime(DateTime.Today);
-		var userId = _authService.IsSignedIn ? _authService.UserId : null;
-		WidgetSnapshotFileStore.Save(WidgetSnapshotBuilder.Build(habits, countMap, today, userId: userId));
+		var isSignedIn = _authService.IsSignedIn;
+		var userId = isSignedIn ? _authService.UserId : null;
+		WidgetSnapshotFileStore.Save(WidgetSnapshotBuilder.Build(
+			habits,
+			countMap,
+			today,
+			isSignedIn: isSignedIn,
+			userId: userId));
 		WidgetSnapshotFileStore.SignalRefresh();
 	}
 }

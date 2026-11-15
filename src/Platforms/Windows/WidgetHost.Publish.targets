@@ -1,23 +1,34 @@
 <Project>
-  <Target Name="PublishWidgetHost"
-          BeforeTargets="_GenerateAppxPackagePayload"
+  <PropertyGroup>
+    <_WidgetHostProject>$(MSBuildThisFileDirectory)..\..\OneTapHabits.WidgetHost\OneTapHabits.WidgetHost.csproj</_WidgetHostProject>
+  </PropertyGroup>
+
+  <Target Name="BuildWidgetHostForPackage"
+          BeforeTargets="ComputeFilesToPublish"
           Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
     <PropertyGroup>
-      <_WidgetHostPublishDir>$(IntermediateOutputPath)widgethost\</_WidgetHostPublishDir>
-      <_WidgetHostRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</_WidgetHostRid>
+      <_WidgetHostRid Condition="'$(RuntimeIdentifier)' == 'win10-x64' or '$(RuntimeIdentifier)' == 'win-x64'">win-x64</_WidgetHostRid>
+      <_WidgetHostRid Condition="'$(RuntimeIdentifier)' == 'win10-arm64' or '$(RuntimeIdentifier)' == 'win-arm64'">win-arm64</_WidgetHostRid>
       <_WidgetHostRid Condition="'$(_WidgetHostRid)' == ''">win-x64</_WidgetHostRid>
+      <_WidgetHostRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\'))</_WidgetHostRepoRoot>
+      <!-- No trailing backslash: `...win-x64\"` escapes the closing quote and swallows following -p: args. -->
+      <_WidgetHostBuildDir>$([System.IO.Path]::GetFullPath('$(_WidgetHostRepoRoot)artifacts\widgethost\$(Configuration)\$(_WidgetHostRid)'))</_WidgetHostBuildDir>
     </PropertyGroup>
 
-    <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\OneTapHabits.WidgetHost\OneTapHabits.WidgetHost.csproj"
-             Targets="Publish"
-             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(_WidgetHostRid);SelfContained=false;PublishDir=$(_WidgetHostPublishDir)" />
+    <MakeDir Directories="$(_WidgetHostBuildDir)" />
+
+    <!-- WorkingDirectory must be repo root so global.json pins SDK 9.x (not machine-default 10.x). -->
+    <Exec WorkingDirectory="$(_WidgetHostRepoRoot)"
+          Command="dotnet build &quot;$(_WidgetHostProject)&quot; -c $(Configuration) -r $(_WidgetHostRid) -p:OutputPath=$(_WidgetHostBuildDir) -p:WindowsPackageType=None -p:GenerateProjectPriFile=false -p:EnableMsixTooling=false -p:EnableCoreMrtTooling=false -p:EnableDefaultPriItems=false" />
 
     <ItemGroup>
-      <_WidgetHostFiles Include="$(_WidgetHostPublishDir)**\*.*" />
-      <Content Include="@(_WidgetHostFiles)">
-        <Link>WidgetHost\%(RecursiveDir)%(Filename)%(Extension)</Link>
-        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
-      </Content>
+      <_WidgetHostSourceFiles Include="$(_WidgetHostBuildDir)\**\*.*" Exclude="$(_WidgetHostBuildDir)\**\*.pdb" />
+      <ResolvedFileToPublish Include="@(_WidgetHostSourceFiles)">
+        <RelativePath>WidgetHost\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
     </ItemGroup>
+
+    <Message Importance="high" Text="Publishing @(_WidgetHostSourceFiles->Count()) WidgetHost files under WidgetHost\" />
   </Target>
 </Project>

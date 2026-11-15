@@ -43,9 +43,11 @@ internal static class WidgetCardBuilder
 		var path = Path.Combine(AppContext.BaseDirectory, "Templates", "HabitsTemplate.json");
 		if (File.Exists(path))
 		{
+			WidgetDebugLog.Info($"Loaded widget template from {path}");
 			return File.ReadAllText(path);
 		}
 
+		WidgetDebugLog.Info($"Widget template missing at {path}; using built-in fallback.");
 		return FallbackTemplate;
 	}
 
@@ -96,6 +98,9 @@ internal static class WidgetCardBuilder
 			{
 				data[$"{prefix}_id"] = string.Empty;
 				data[$"{prefix}_name"] = string.Empty;
+				data[$"{prefix}_name_size"] = "Small";
+				data[$"{prefix}_name_max_lines"] = 2;
+				data[$"{prefix}_name_align"] = "Left";
 				data[$"{prefix}_progress"] = string.Empty;
 				data[$"{prefix}_show_progress"] = false;
 				data[$"{prefix}_show_decrement"] = false;
@@ -105,11 +110,16 @@ internal static class WidgetCardBuilder
 			var habit = snapshot.Habits[i];
 			var isAnimating = animation is not null && animation.CellIndex == i;
 			var progress = WidgetProgressFormatter.FormatProgress(habit.Count, habit.TimesPerDay);
-
-			data[$"{prefix}_id"] = habit.Id;
-			data[$"{prefix}_name"] = isAnimating
+			var displayName = isAnimating
 				? GetAnimationText(animation!.Kind)
 				: habit.Name;
+			var useLargeName = isAnimating || HabitNameDisplayHelper.IsSingleEmoji(habit.Name);
+
+			data[$"{prefix}_id"] = habit.Id;
+			data[$"{prefix}_name"] = displayName;
+			data[$"{prefix}_name_size"] = useLargeName ? "ExtraLarge" : "Small";
+			data[$"{prefix}_name_max_lines"] = useLargeName ? 1 : 2;
+			data[$"{prefix}_name_align"] = useLargeName ? "Center" : "Left";
 			data[$"{prefix}_progress"] = progress ?? string.Empty;
 			data[$"{prefix}_show_progress"] = !isAnimating && progress is not null;
 			data[$"{prefix}_show_decrement"] = !isAnimating && progress is not null && habit.Count > 0;

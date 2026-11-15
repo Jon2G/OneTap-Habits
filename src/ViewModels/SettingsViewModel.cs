@@ -21,6 +21,8 @@ public partial class SettingsViewModel : ObservableObject
 	private readonly UpdateCoordinator _updateCoordinator;
 	private readonly IDiagnosticLogService _diagnosticLog;
 	private readonly ICloudRestoreService _cloudRestore;
+	private readonly IAppStartupService _appStartup;
+	private bool _suppressStartupToggle;
 
 	[ObservableProperty]
 	private string? accountMessage;
@@ -34,6 +36,15 @@ public partial class SettingsViewModel : ObservableObject
 	[ObservableProperty]
 	private bool isRestoreCloudBusy;
 
+	[ObservableProperty]
+	private bool startWithWindows;
+
+	[ObservableProperty]
+	private bool isStartupToggleBusy;
+
+	[ObservableProperty]
+	private string? startupErrorMessage;
+
 	public SettingsViewModel(
 		IAuthService authService,
 		IGoogleSignInService googleSignInService,
@@ -43,7 +54,8 @@ public partial class SettingsViewModel : ObservableObject
 		IWidgetAppearanceService widgetAppearance,
 		UpdateCoordinator updateCoordinator,
 		IDiagnosticLogService diagnosticLog,
-		ICloudRestoreService cloudRestore)
+		ICloudRestoreService cloudRestore,
+		IAppStartupService appStartup)
 	{
 		_authService = authService;
 		_googleSignInService = googleSignInService;
@@ -54,6 +66,7 @@ public partial class SettingsViewModel : ObservableObject
 		_updateCoordinator = updateCoordinator;
 		_diagnosticLog = diagnosticLog;
 		_cloudRestore = cloudRestore;
+		_appStartup = appStartup;
 	}
 
 	public INavigation? Navigation { get; set; }
@@ -88,6 +101,10 @@ public partial class SettingsViewModel : ObservableObject
 	public string WidgetTintMediumLabel => _widgetAppearance.GetLabel(WidgetTintStrength.Medium);
 	public string WidgetTintStrongLabel => _widgetAppearance.GetLabel(WidgetTintStrength.Strong);
 	public bool IsWidgetSettingsSupported => DeviceInfo.Platform == DevicePlatform.Android;
+	public bool IsWindowsStartupSupported => _appStartup.IsSupported;
+	public string StartWithWindowsLabel => _localization.Get("StartWithWindows");
+	public string StartWithWindowsHint => _localization.Get("StartWithWindowsHint");
+	public bool HasStartupError => !string.IsNullOrWhiteSpace(StartupErrorMessage);
 
 	public bool IsGuest => _authService.IsGuest;
 	public bool IsSignedIn => _authService.IsSignedIn;
@@ -116,12 +133,81 @@ public partial class SettingsViewModel : ObservableObject
 
 	partial void OnAccountErrorMessageChanged(string? value) => OnPropertyChanged(nameof(HasAccountError));
 
-	public void RefreshChoices() => NotifyChoicePropertiesChanged();
+	partial void OnStartupErrorMessageChanged(string? value) => OnPropertyChanged(nameof(HasStartupError));
+
+	partial void OnStartWithWindowsChanged(bool value)
+	{
+		if (_suppressStartupToggle || !_appStartup.IsSupported || IsStartupToggleBusy)
+		{
+			return;
+		}
+
+		_ = ApplyStartupPreferenceAsync(value);
+	}
+
+	public void RefreshChoices()
+	{
+		NotifyChoicePropertiesChanged();
+		_ = RefreshStartupStateAsync();
+	}
 
 	public void RefreshAccountState()
 	{
 		NotifyAccountPropertiesChanged();
 		OnPropertyChanged(nameof(CanUseGoogleSignIn));
+	}
+
+	private async Task RefreshStartupStateAsync()
+	{
+		if (!_appStartup.IsSupported)
+		{
+			return;
+		}
+
+		try
+		{
+			var enabled = await _appStartup.GetEnabledAsync();
+			_suppressStartupToggle = true;
+			StartWithWindows = enabled;
+			StartupErrorMessage = null;
+		}
+		catch (Exception ex)
+		{
+			_diagnosticLog.LogError("Startup", ex, "Failed to read startup task state.");
+			StartupErrorMessage = _localization.Get("StartWithWindowsError");
+		}
+		finally
+		{
+			_suppressStartupToggle = false;
+		}
+	}
+
+	private async Task ApplyStartupPreferenceAsync(bool enabled)
+	{
+		IsStartupToggleBusy = true;
+		StartupErrorMessage = null;
+		try
+		{
+			var result = await _appStartup.SetEnabledAsync(enabled);
+			_suppressStartupToggle = true;
+			StartWithWindows = result;
+			if (enabled && !result)
+			{
+				StartupErrorMessage = _localization.Get("StartWithWindowsError");
+			}
+		}
+		catch (Exception ex)
+		{
+			_diagnosticLog.LogError("Startup", ex, "Failed to change startup task state.");
+			_suppressStartupToggle = true;
+			StartWithWindows = !enabled;
+			StartupErrorMessage = _localization.Get("StartWithWindowsError");
+		}
+		finally
+		{
+			_suppressStartupToggle = false;
+			IsStartupToggleBusy = false;
+		}
 	}
 
 	[RelayCommand]
@@ -455,5 +541,11 @@ public partial class SettingsViewModel : ObservableObject
 		OnPropertyChanged(nameof(WidgetTintSubtleLabel));
 		OnPropertyChanged(nameof(WidgetTintMediumLabel));
 		OnPropertyChanged(nameof(WidgetTintStrongLabel));
+		OnPropertyChanged(nameof(StartWithWindowsLabel));
+		OnPropertyChanged(nameof(StartWithWindowsHint));
+		if (!string.IsNullOrWhiteSpace(StartupErrorMessage))
+		{
+			StartupErrorMessage = _localization.Get("StartWithWindowsError");
+		}
 	}
 }

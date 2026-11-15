@@ -383,6 +383,15 @@
   <data name="WidgetTintStrong" xml:space="preserve">
     <value>Intenso</value>
   </data>
+  <data name="StartWithWindows" xml:space="preserve">
+    <value>Iniciar con Windows</value>
+  </data>
+  <data name="StartWithWindowsHint" xml:space="preserve">
+    <value>Abrir OneTap Habits al iniciar sesión en Windows.</value>
+  </data>
+  <data name="StartWithWindowsError" xml:space="preserve">
+    <value>No se pudo cambiar el inicio automático. Revisa Administrador de tareas → Aplicaciones de inicio, o la política de tu organización.</value>
+  </data>
   <data name="CalendarInsightsTitle" xml:space="preserve">
     <value>Tu progreso</value>
   </data>
