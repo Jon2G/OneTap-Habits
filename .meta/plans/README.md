@@ -5,6 +5,7 @@ Implementation plans for OneTap-Habits, written to be handed to Cursor (or any a
 | Plan | What it covers | Status |
 |---|---|---|
 | [free-tier-firebase.md](free-tier-firebase.md) | Keep the app on free tiers forever (Firebase Spark, GitHub Actions, Pages) for a single user; audit cloud calls, harden Firestore rules, add $0 budget alert and kill-switch | Planned |
+| [fix-decrement-gesture.md](fix-decrement-gesture.md) | Fix the decrement gesture on the Today screen (issue #4) — long-press vs double-tap decision, gesture-layer investigation | Planned |
 | connector-onetap-habits.md | Muse connector for OneTap-Habits (local-first, $0) | Not written yet |
 
 ## Conventions
