@@ -1,0 +1,1 @@
+{"mcpServers":{"onetap-habits":{"args":["/path/to/OneTap-Habits/connector/server.py","--data-file","/path/to/guest_data.json"],"command":"python3","env":{}}}}
