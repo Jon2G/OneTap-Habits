@@ -110,6 +110,9 @@
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding IncrementCommand}"
                                                           CommandParameter="{Binding .}" />
+                                    <TapGestureRecognizer NumberOfTapsRequired="2"
+                                                          Command="{Binding DecrementCommand}"
+                                                          CommandParameter="{Binding .}" />
                                 </Border.GestureRecognizers>
                                 <Border.Behaviors>
                                     <behaviors:LongPressBehavior Command="{Binding DecrementCommand}"
